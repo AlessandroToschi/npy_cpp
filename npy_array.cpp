@@ -6,7 +6,8 @@ npy_array<T>::npy_array(const std::string& array_path)
     std::string magic_string;
     uint8_t major_version;
     uint8_t minor_version;
-    uint16_t header_length;
+    uint16_t header_length_v1;
+    uint32_t header_length_v2;
     std::string header;
     std::ifstream array_stream;
 
@@ -39,7 +40,7 @@ npy_array<T>::npy_array(const std::string& array_path)
         if(major_version != 0x01)
         {
             debug_message("NPY Array: unsupported major version " << static_cast<int>(major_version));
-            //TODO Lanciare eccezione
+            throw npy_array_exception{npy_array_exception_type::unsupported_version};
         }
 
         array_stream.read(reinterpret_cast<char*>(&header_length), 2);
@@ -55,11 +56,11 @@ npy_array<T>::npy_array(const std::string& array_path)
     }
     catch(const std::ios_base::failure& failure_exception)
     {
-        //TODO Lanciare eccezione perchè c'è stato un errore relativo alla lettura/apertura del file.
+        throw npy_array_exception{npy_array_exception_type::input_output_error};
     }
     catch(const std::regex_error& regex_exception)
     {
-        std::cout << regex_exception.what() << std::endl;
+        throw npy_array_exception{npy_array_exception_type::ill_formed_header};
     }
 }
 
