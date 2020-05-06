@@ -52,6 +52,10 @@ npy_array<T>::npy_array(const std::string& array_path)
         debug_message("NPY Array: header '" << header << "'");
 
         this->parse_header(header);
+
+        this->data.resize(this->size());
+
+        array_stream.read(reinterpret_cast<char*>(this->data.data()), this->byte_size());
     }
     catch(const std::ios_base::failure& failure_exception)
     {
@@ -73,47 +77,57 @@ void npy_array<T>::parse_header(const std::string& header)
 
     debug_message("NPY Array: striped header '" << header_copy << "'");
 
-    std::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+)*\)))"};
+    std::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+|,)*\)))"};
     std::sregex_iterator next_iterator{header_copy.begin(), header_copy.end(), pattern};
     std::sregex_iterator end_iterator{};
     
     while(next_iterator != end_iterator)
     {
         const auto match = *next_iterator;
-
-        if(match.size() != 4)
-        {
-            throw std::regex_error{std::regex_constants::error_type::_S_error_backref};
-        }
-
         const auto key = match[1].str();
 
         if(key == "descr")
         {
             const auto description = match[3].str();
+            this->byte_order = get_endianess();
+            this->data_size = std::stoull(description.substr(2));
 
-            if(description.size() != 3)
+            if(static_cast<char>(this->byte_order) != description[0])
             {
-
+                throw "big endianess not supported";
             }
-            
-            auto x = get_endianess();
+
+            if(sizeof(T) > this->data_size)
+            {
+                throw "type not valid for this anpy";
+            }
+
+            debug_message("NPY Array: Endianess: " << static_cast<char>(this->byte_order) << " Data size: " << this->data_size);
         }
         else if(key == "fortran_order")
         {
-
+            this->fortran_order = match[2].str() == "False" ? false : true;
+            debug_message("NPY Array: Fortran Order: " << this->fortran_order);
         }
         else if(key == "shape")
         {
+            auto shape_string = match[2].str();
+            std::regex shape_pattern{R"((\d+))"};
+            std::sregex_iterator shape_iterator{shape_string.begin(), shape_string.end(), shape_pattern};
 
+            while(shape_iterator != end_iterator)
+            {
+                const auto shape_match = *shape_iterator;
+                this->shape.push_back(std::stoull(shape_match[0].str()));
+                shape_iterator++;
+            }
+
+            debug_message("NPY Array: shape size: " << this->size());
         }
         else
         {
-            throw std::regex_error{std::regex_constants::error_type::_S_error_backref};
+            throw std::regex_error{std::regex_constants::error_backref};
         }
-        
-
-
 
         next_iterator++;
     }
