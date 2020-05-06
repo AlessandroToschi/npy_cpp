@@ -26,26 +26,54 @@ endianness get_endianess()
     {
         uint32_t integer_value;
         uint8_t byte_value[4];
-    } test = {0x10203040};
-    
-    if(test.byte_value[0] == 0x10)
-    {
-        return endianness::big_endian;
-    }
-    else
-    {
-        return endianness::little_endian;
-    }
-    
+    } word = {0x10203040};
+
+    return word.byte_value[0] == 0x10 ? endianness::big_endian : endianness::little_endian;
 }
+
+enum npy_array_exception_type
+{
+    input_output_error,
+    ill_formed_header,
+    unsupported_version,
+    invalid_magic_string,
+};
+
+class npy_array_exception : std::exception
+{
+public:
+    npy_array_exception(const npy_array_exception_type exception_type) : exception_type{exception_type}{}
+
+    const char* what()
+    {
+        switch (this->exception_type)
+        {
+        case npy_array_exception_type::input_output_error:
+            return "There has been an error while opening or reading the file.";
+        case npy_array_exception_type::ill_formed_header:
+            return "The header of the file is ill-formed.";
+        case npy_array_exception_type::unsupported_version:
+            return "The version of the file is unsupported.";
+        case npy_array_exception_type::invalid_magic_string:
+            return "The magic string is invalid.";
+        default:
+            return "unknwon";
+        }
+    }
+
+private:
+    npy_array_exception_type exception_type;
+};
 
 template<typename T>
 class npy_array
 {
 public:
     npy_array(const std::string& array_path);
+
     npy_array(const std::vector<size_t>& shape);
     npy_array(std::vector<size_t>&& shape);
+
     npy_array(const std::vector<size_t>& shape, const std::vector<T>& data);
     npy_array(std::vector<size_t>&& shape, std::vector<T>&& data);
 
