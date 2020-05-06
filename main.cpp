@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
     std::for_each(shape.begin(), shape.end(), [](const size_t& i){std::cout << i << std::endl;});
 
     npy_array<float> pippo{"./archive.npy"};
+    npy_array<float> gfgf{"./test/version_2.npy"};
     //pippo.do_something();
     //prova_move({1, 2, 3, 4});
 

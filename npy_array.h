@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <numeric>
 #include <functional>
+#include <endian.h>
 
 #define debug_message(message) do { if(DEBUG) std::cout << message << std::endl; } while (0)
 
@@ -60,6 +61,8 @@ public:
             return "unknwon";
         }
     }
+
+    npy_array_exception_type get_exception_type() const {return this->exception_type;}
 
 private:
     npy_array_exception_type exception_type;

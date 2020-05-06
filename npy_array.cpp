@@ -11,8 +11,9 @@ npy_array<T>::npy_array(const std::string& array_path)
     // Version 3: the same as the version 1, butthe field names are encoded in UTF-8 instead of ASCII.
     uint8_t major_version; 
     uint8_t minor_version; // The minor version of the file, just for reference.
-    uint16_t header_length_v1; // The header length in bytes for the version 1 file format.
-    uint32_t header_length_v2; // The header length in bytes for the version 2 file format.
+    // The header length in bytes.
+    // Version 1 header length is 2 bytes, Version 2 header length is 4 bytes.
+    uint32_t header_length;
     // The header of the file is a Python dictionary represented as string which contains three fields:
     // 'desc': the NumPy.dtype object representation.
     // 'fortran_order': true if the values in the array are stored in fortran order, otherwise false.
@@ -22,50 +23,62 @@ npy_array<T>::npy_array(const std::string& array_path)
     // The input stream object that is used to read the file.
     std::ifstream array_stream;
 
+    // Get the endianess of this system.
+    endianness machine_endianess = get_endianess();
+
     // Convert all the iostate bits to exceptions.
     array_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
-
-    debug_message("NPY Array: opening file path " << array_path);
 
     try
     {
         // Open the file.
         array_stream.open(array_path);
 
-        debug_message("NPY Array: file opened successfully at path " << array_path);
-
         // The magic string is exactly 6 bytes, so we reserve that size to be able to directly read those 6 bytes in the string.
         magic_string.resize(6);
         array_stream.read(&magic_string[0], 6);
 
-        debug_message("NPY Array: magic string is " << magic_string);
-
-
+        // Check if the magic string is corrected, otherwise throw an exception.
+        // The magic string is hard-coded and endianess-invariant since it is a string.
         if(magic_string != "\x93NUMPY")
         {
-            debug_message("NPY Array: magic string is incorrect");
             throw npy_array_exception{npy_array_exception_type::invalid_magic_string};
         }
 
+        // Read the major and minor version.
         array_stream.read(reinterpret_cast<char*>(&major_version), 1);
         array_stream.read(reinterpret_cast<char*>(&minor_version), 1);
 
-        debug_message("NPY Array: version " << static_cast<int>(major_version) << "." << static_cast<int>(minor_version));
-
-        if(major_version != 0x01)
+        // If the version is 1, then the header length is 2 bytes.
+        // We use a temporary variable of 2 bytes and then copy the result to the other header_length.
+        // The header length is stored in little-endian order so if we read it in a little endian system there is no problem, otherwise we must reverse the bytes.
+        // To reverse the bytes, we use the intrinsic defined in endian.h
+        if(major_version == 0x01)
         {
-            debug_message("NPY Array: unsupported major version " << static_cast<int>(major_version));
+            uint16_t header_length_v1;
+            array_stream.read(reinterpret_cast<char*>(&header_length_v1), 2);
+            header_length = machine_endianess == endianness::little_endian ? header_length_v1 : __bswap_16(header_length_v1);
+        }
+        // If the version is 2, then the header length is 4 bytes.
+        // It is directly read in the header_length of the function.
+        // The same consideration for the endianess applies for the version 2 header length.
+        else if(major_version == 0x02)
+        {
+            array_stream.read(reinterpret_cast<char*>(&header_length), 4);
+
+            if(machine_endianess == endianness::big_endian)
+            {
+                header_length = __bswap_32(header_length);
+            }
+        }
+        // Version 3 still not supported or invalid version found, throw an exception.
+        else
+        {
             throw npy_array_exception{npy_array_exception_type::unsupported_version};
         }
 
-        array_stream.read(reinterpret_cast<char*>(&header_length_v1), 2);
-
-        debug_message("NPY Array: header length " << header_length << " bytes");
-
         header.resize(header_length);
         array_stream.read(&header[0], header_length);
-
-        debug_message("NPY Array: header '" << header << "'");
 
         this->parse_header(header);
 
