@@ -3,33 +3,48 @@
 template<typename T>
 npy_array<T>::npy_array(const std::string& array_path)
 {
-    std::string magic_string;
-    uint8_t major_version;
-    uint8_t minor_version;
-    uint16_t header_length_v1;
-    uint32_t header_length_v2;
+    // A NumPy array file always starts with the following magic string '\x93NUMPY'.
+    std::string magic_string; 
+    // The major version of the NumPy array. There exists three version:
+    // Version 1: the classic NumPy array having an header of maximum size of 65536 bytes (16-bit).
+    // Version 2: the same as the version 1, but it allows an header of maximum size of 2^32 (32-bit).
+    // Version 3: the same as the version 1, butthe field names are encoded in UTF-8 instead of ASCII.
+    uint8_t major_version; 
+    uint8_t minor_version; // The minor version of the file, just for reference.
+    uint16_t header_length_v1; // The header length in bytes for the version 1 file format.
+    uint32_t header_length_v2; // The header length in bytes for the version 2 file format.
+    // The header of the file is a Python dictionary represented as string which contains three fields:
+    // 'desc': the NumPy.dtype object representation.
+    // 'fortran_order': true if the values in the array are stored in fortran order, otherwise false.
+    // 'shape': the shape of the array.
+    // The header is terminated by a '\n' and padded with spaces ('\x20') to make the whole header even divisible by 64.
     std::string header;
+    // The input stream object that is used to read the file.
     std::ifstream array_stream;
 
+    // Convert all the iostate bits to exceptions.
     array_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
 
     debug_message("NPY Array: opening file path " << array_path);
 
     try
     {
+        // Open the file.
         array_stream.open(array_path);
 
         debug_message("NPY Array: file opened successfully at path " << array_path);
 
+        // The magic string is exactly 6 bytes, so we reserve that size to be able to directly read those 6 bytes in the string.
         magic_string.resize(6);
         array_stream.read(&magic_string[0], 6);
 
         debug_message("NPY Array: magic string is " << magic_string);
 
+
         if(magic_string != "\x93NUMPY")
         {
             debug_message("NPY Array: magic string is incorrect");
-            //TODO: lanciare eccezione perchè non ho riconosciuto la magic string.
+            throw npy_array_exception{npy_array_exception_type::invalid_magic_string};
         }
 
         array_stream.read(reinterpret_cast<char*>(&major_version), 1);
@@ -43,7 +58,7 @@ npy_array<T>::npy_array(const std::string& array_path)
             throw npy_array_exception{npy_array_exception_type::unsupported_version};
         }
 
-        array_stream.read(reinterpret_cast<char*>(&header_length), 2);
+        array_stream.read(reinterpret_cast<char*>(&header_length_v1), 2);
 
         debug_message("NPY Array: header length " << header_length << " bytes");
 

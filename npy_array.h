@@ -34,7 +34,7 @@ enum npy_array_exception_type
     input_output_error,
     ill_formed_header,
     unsupported_version,
-    prova2
+    invalid_magic_string,
 };
 
 class npy_array_exception : std::exception
@@ -52,8 +52,8 @@ public:
             return "The header of the file is ill-formed.";
         case npy_array_exception_type::unsupported_version:
             return "The version of the file is unsupported.";
-        case npy_array_exception_type::prova:
-            return "prova";
+        case npy_array_exception_type::invalid_magic_string:
+            return "The magic string is invalid.";
         default:
             return "unknwon";
         }
