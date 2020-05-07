@@ -79,10 +79,15 @@ npy_array<T>::npy_array(const std::string& array_path)
         {
             throw npy_array_exception{npy_array_exception_type::unsupported_version};
         }
-
+        
+        // Reserve the required memory for storing the header and read it from the file.
+        // If the memory reservation fails (very unlikely tho), it will throw a bad_alloc exception, which is caught.
         header.resize(header_length);
         array_stream.read(&header[0], header_length);
 
+        // Parse the header of the file.
+        // This function will assign a value to the following field: shape, fortran_order, byte_order, and item size.
+        // If the header parse fails to assign a value to any of such fields, then this function will throw an exception.
         this->parse_header(header);
 
         this->data.resize(this->size());
@@ -97,29 +102,69 @@ npy_array<T>::npy_array(const std::string& array_path)
     {
         throw npy_array_exception{npy_array_exception_type::ill_formed_header};
     }
+    catch(const std::bad_alloc& bad_alloc_exception)
+    {
+        throw npy_array_exception{npy_array_exception_type::unsufficient_memory};
+    }
+    catch(const std::exception& exeption)
+    {
+        throw npy_array_exception{npy_array_exception_type::generic};
+    }
 }
 
 template<typename T>
 void npy_array<T>::parse_header(const std::string& header)
 {
+    // Create a copy of the header string and remove from it the whitespace and new line characters.
     auto header_copy{header};
     header_copy.erase(std::remove_if(header_copy.begin(), header_copy.end(), [](char c){
         return std::isspace(c) || c == '\n';
     }), header_copy.end());
 
-    debug_message("NPY Array: striped header '" << header_copy << "'");
-
-    boost::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+|,)*\)))"};
+    //boost::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+|,)*\)))"};
+    //'(\w+)'
+    boost::regex pattern{R"((\w+))"}; // Regex pattern that catches any word enclosed by '.
+    // The regex iterator that will iterate over all the matches in the header string.
     boost::sregex_iterator next_iterator{header_copy.begin(), header_copy.end(), pattern};
+    // The end of a regex iterator is assumed to be the empty iterator.
     boost::sregex_iterator end_iterator{};
+    // Mask that contains 3 flags, each flag is 0 if the header key has not been found, otherwise is 1.
+    // Bit 0: descr, Bit 1: fortran_order, and Bit 2: shape.
+    std::bitset<3> fields_mask{0};
     
+    //
     while(next_iterator != end_iterator)
     {
-        const auto match = *next_iterator;
-        const auto key = match[1].str();
+        // If a match has been found, retrieve the match list and extract the first group which will contain the header key.
+        const auto match_results = *next_iterator;
 
-        if(key == "descr")
+        // We ensure that the match is not empty and contains at least two sub matches:
+        // the first match is the header key with the apices, like 'descr'.
+        // the second match is the header key itself, like descr.
+        if(match_results.empty() || match_results.size() < 2)
         {
+            throw boost::regex_error{boost::regex_constants::error_unknown};
+        }
+        
+        // Get the second match that is the header key.
+        const auto key = match_results[1];
+
+        if(key.str() == "descr")
+        {
+            boost::regex description_pattern{R"('(<\w+)')"};
+            boost::match_results<std::string::const_iterator> description_match{};
+
+            if(!boost::regex_search(key.second, header_copy.cend(), description_match))
+            {
+
+            }
+
+            std::cout << description_match[0].str() << std::endl;
+
+            //const auto sub = header_copy.substr()
+            //std::cout << key.first << " " << key.second << std::endl;
+
+            /*
             const auto description = match[3].str();
             this->byte_order = get_endianess();
             this->data_size = std::stoull(description.substr(2));
@@ -135,7 +180,9 @@ void npy_array<T>::parse_header(const std::string& header)
             }
 
             debug_message("NPY Array: Endianess: " << static_cast<char>(this->byte_order) << " Data size: " << this->data_size);
+            */
         }
+        /*
         else if(key == "fortran_order")
         {
             this->fortran_order = match[2].str() == "False" ? false : true;
@@ -160,7 +207,7 @@ void npy_array<T>::parse_header(const std::string& header)
         {
             throw boost::regex_error{boost::regex_constants::error_backref};
         }
-
+        */
         next_iterator++;
     }
 }

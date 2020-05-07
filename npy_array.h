@@ -38,6 +38,8 @@ enum npy_array_exception_type
     ill_formed_header,
     unsupported_version,
     invalid_magic_string,
+    unsufficient_memory,
+    generic
 };
 
 class npy_array_exception : std::exception
@@ -57,8 +59,10 @@ public:
             return "The version of the file is unsupported.";
         case npy_array_exception_type::invalid_magic_string:
             return "The magic string is invalid.";
-        default:
-            return "unknwon";
+        case npy_array_exception_type::unsufficient_memory:
+            return "The memory required is unsufficient.";
+        case npy_array_exception_type::generic:
+            return "There has been an error.";
         }
     }
 
@@ -95,7 +99,7 @@ public:
 
     endianness get_byte_order() const {return this->byte_order;};
 
-    size_t get_data_size() const {return this->data_size;};
+    size_t get_item_size() const {return this->item_size;};
 
     bool is_fortran_order() const {return this->fortran_order;};
 
@@ -103,14 +107,14 @@ public:
 
     size_t size() const {return std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<size_t>());};
     
-    size_t byte_size() const {return this->data_size * this->size();};
+    size_t byte_size() const {return this->item_size * this->size();};
 
 private:
     std::vector<size_t> shape;
     std::vector<T> data;
     bool fortran_order;
     endianness byte_order;
-    size_t data_size;
+    size_t item_size;
 
 
     void parse_header(const std::string& header);
