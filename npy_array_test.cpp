@@ -45,9 +45,36 @@ TEST(NPYArrayTest, ConstructorMagicStringTest)
 TEST(NPYArrayTest, ConstructorVersionTest)
 {
     EXPECT_NO_THROW(npy_array<float>{"./test/archive.npy"});
-    EXPECT_NO_THROW(npy_array<float>{"./test/version_2.npy"});
+    EXPECT_THROW(npy_array<float>{"./test/version_2.npy"}, npy_array_exception);
     EXPECT_THROW(npy_array<float>{"./test/version_3.npy"}, npy_array_exception);
     EXPECT_THROW(npy_array<float>{"./test/version_0.npy"}, npy_array_exception);
+
+    try
+    {
+        npy_array<float>{"./test/version_2.npy"};
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.get_exception_type(), npy_array_exception_type::unsupported_version);
+    }
+
+    try
+    {
+        npy_array<float>{"./test/version_3.npy"};
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.get_exception_type(), npy_array_exception_type::unsupported_version);
+    }
+
+    try
+    {
+        npy_array<float>{"./test/version_0.npy"};
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.get_exception_type(), npy_array_exception_type::unsupported_version);
+    }
 }
 
 int main(int argc, char* argv[])

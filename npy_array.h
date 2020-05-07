@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdint.h>
-#include <regex>
+#include <boost/regex.hpp>
 #include <algorithm>
 #include <numeric>
 #include <functional>
@@ -92,11 +92,17 @@ public:
 
     const T* get_data() const {return this->data.data();};
     T* get_data() {return this->data.data();};
+
     endianness get_byte_order() const {return this->byte_order;};
+
     size_t get_data_size() const {return this->data_size;};
+
     bool is_fortran_order() const {return this->fortran_order;};
+
     const std::vector<size_t>& get_shape() const {return this->shape;};
+
     size_t size() const {return std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<size_t>());};
+    
     size_t byte_size() const {return this->data_size * this->size();};
 
 private:

@@ -62,6 +62,7 @@ npy_array<T>::npy_array(const std::string& array_path)
         // If the version is 2, then the header length is 4 bytes.
         // It is directly read in the header_length of the function.
         // The same consideration for the endianess applies for the version 2 header length.
+        // Still need to working on, so I consider the version 2 as unsupported.
         else if(major_version == 0x02)
         {
             array_stream.read(reinterpret_cast<char*>(&header_length), 4);
@@ -70,6 +71,8 @@ npy_array<T>::npy_array(const std::string& array_path)
             {
                 header_length = __bswap_32(header_length);
             }
+
+            throw npy_array_exception{npy_array_exception_type::unsupported_version};
         }
         // Version 3 still not supported or invalid version found, throw an exception.
         else
@@ -90,7 +93,7 @@ npy_array<T>::npy_array(const std::string& array_path)
     {
         throw npy_array_exception{npy_array_exception_type::input_output_error};
     }
-    catch(const std::regex_error& regex_exception)
+    catch(const boost::regex_error& regex_exception)
     {
         throw npy_array_exception{npy_array_exception_type::ill_formed_header};
     }
@@ -106,9 +109,9 @@ void npy_array<T>::parse_header(const std::string& header)
 
     debug_message("NPY Array: striped header '" << header_copy << "'");
 
-    std::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+|,)*\)))"};
-    std::sregex_iterator next_iterator{header_copy.begin(), header_copy.end(), pattern};
-    std::sregex_iterator end_iterator{};
+    boost::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+|,)*\)))"};
+    boost::sregex_iterator next_iterator{header_copy.begin(), header_copy.end(), pattern};
+    boost::sregex_iterator end_iterator{};
     
     while(next_iterator != end_iterator)
     {
@@ -141,8 +144,8 @@ void npy_array<T>::parse_header(const std::string& header)
         else if(key == "shape")
         {
             auto shape_string = match[2].str();
-            std::regex shape_pattern{R"((\d+))"};
-            std::sregex_iterator shape_iterator{shape_string.begin(), shape_string.end(), shape_pattern};
+            boost::regex shape_pattern{R"((\d+))"};
+            boost::sregex_iterator shape_iterator{shape_string.begin(), shape_string.end(), shape_pattern};
 
             while(shape_iterator != end_iterator)
             {
@@ -155,7 +158,7 @@ void npy_array<T>::parse_header(const std::string& header)
         }
         else
         {
-            throw std::regex_error{std::regex_constants::error_backref};
+            throw boost::regex_error{boost::regex_constants::error_backref};
         }
 
         next_iterator++;

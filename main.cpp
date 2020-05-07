@@ -18,9 +18,13 @@ int main(int argc, char *argv[])
     std::for_each(shape.begin(), shape.end(), [](const size_t& i){std::cout << i << std::endl;});
 
     npy_array<float> pippo{"./archive.npy"};
-    npy_array<float> gfgf{"./test/version_2.npy"};
+    //npy_array<float> gfgf{"./test/version_2.npy"};
     //pippo.do_something();
     //prova_move({1, 2, 3, 4});
+
+    size_t count = 50000000000;
+    std::vector<char> fgf;
+    fgf.resize(count);
 
     std::cout << "After" << std::endl;
     std::cout << "Shape size: " << shape.size() << std::endl;
