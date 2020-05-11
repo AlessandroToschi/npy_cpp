@@ -24,7 +24,7 @@ npy_array<T>::npy_array(const std::string& array_path)
     std::ifstream array_stream;
 
     // Get the endianess of this system.
-    endianness machine_endianess = get_endianess();
+    npy_endianness machine_endianess = get_endianess();
 
     // Convert all the iostate bits to exceptions.
     array_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
@@ -57,7 +57,7 @@ npy_array<T>::npy_array(const std::string& array_path)
         {
             uint16_t header_length_v1;
             array_stream.read(reinterpret_cast<char*>(&header_length_v1), 2);
-            header_length = machine_endianess == endianness::little_endian ? header_length_v1 : __bswap_16(header_length_v1);
+            header_length = machine_endianess == npy_endianness::little_endian ? header_length_v1 : __bswap_16(header_length_v1);
         }
         // If the version is 2, then the header length is 4 bytes.
         // It is directly read in the header_length of the function.
@@ -67,7 +67,7 @@ npy_array<T>::npy_array(const std::string& array_path)
         {
             array_stream.read(reinterpret_cast<char*>(&header_length), 4);
 
-            if(machine_endianess == endianness::big_endian)
+            if(machine_endianess == npy_endianness::big_endian)
             {
                 header_length = __bswap_32(header_length);
             }
@@ -154,13 +154,14 @@ void npy_array<T>::parse_header(const std::string& header)
             boost::regex description_pattern{R"('(<\w+)')"};
             boost::match_results<std::string::const_iterator> description_match{};
 
+            /*
             if(!boost::regex_search(key.second, header_copy.cend(), description_match))
             {
 
             }
 
             std::cout << description_match[0].str() << std::endl;
-
+            */
             //const auto sub = header_copy.substr()
             //std::cout << key.first << " " << key.second << std::endl;
 
