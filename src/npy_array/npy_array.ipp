@@ -1,4 +1,4 @@
-#include "npy_array.h"
+#include "npy_array/npy_array.h"
 
 template<typename T>
 npy_array<T>::npy_array(const std::string& array_path)

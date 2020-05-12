@@ -1,4 +1,4 @@
-#include "npy_exception.h"
+#include "npy_array/npy_exception.h"
 
 npy_array_exception::npy_array_exception(const npy_array_exception_type exception_type) 
     : _exception_type{exception_type} {}
@@ -20,6 +20,7 @@ const char* npy_array_exception::what()
         case npy_array_exception_type::generic:
             return "There has been an error.";
         }
+    return nullptr;
 }
 
 npy_array_exception_type npy_array_exception::exception_type() const

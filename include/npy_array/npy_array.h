@@ -13,8 +13,8 @@
 #include <functional>
 #include <endian.h>
 
-#include "endianess.h"
-#include "npy_exception.h"
+#include "npy_array/endianess.h"
+#include "npy_array/npy_exception.h"
 
 template<typename T>
 class npy_array
@@ -34,9 +34,9 @@ public:
 
     ~npy_array() = default;
 
-    npy_array& operator()(npy_array other) = delete;
-    npy_array& operator()(const npy_array& other) = delete;
-    npy_array& operator()(npy_array&& other) = delete;
+    npy_array& operator=(npy_array other) = delete;
+    npy_array& operator=(const npy_array& other) = delete;
+    npy_array& operator=(npy_array&& other) = default;
 
     const T* get_data() const {return this->data.data();};
     T* get_data() {return this->data.data();};
@@ -64,6 +64,6 @@ private:
     void parse_header(const std::string& header);
 };
 
-#include "npy_array.ipp"
+#include "npy_array/npy_array.ipp"
 
 #endif /* D95166DE_89E6_49FF_A7EA_BA27F7948D32 */

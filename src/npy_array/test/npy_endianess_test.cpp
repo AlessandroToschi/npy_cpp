@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <endian.h>
 
-#include "endianess.h"
+#include "npy_array/endianess.h"
 
 TEST(NPYEndianessTest, MachineEndianessCorrectnessTest)
 {

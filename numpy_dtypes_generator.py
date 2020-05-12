@@ -22,5 +22,5 @@ dtypes = [
 if __name__ == "__main__":
     for dt in dtypes:
         arr = np.zeros(10, dtype=dt)
-        #print(arr.dtype.name, arr.dtype.str, arr.dtype.kind, arr.dtype.char, arr.dtype.type)
-        np.save("./test/{}.npy".format(arr.dtype.name), arr)
+        print(arr.dtype.str)
+        #np.save("./test/{}.npy".format(arr.dtype.name), arr)
