@@ -44,7 +44,7 @@ test: shared_lib $(TEST_OBJECT_FILES)
 
 %_test.o: %_test.cpp
 	@echo $(@F)
-	$(CXX) --std=c++11 -Wall -Wpedantic $(INCLUDES) $< -o bin/$(basename $(@F)) -L /usr/local/lib/ -lgtest -lboost_regex -L lib -lnpy_array -Wl,-rpath=./lib
+	$(CXX) -g --std=c++11 -Wall -Wpedantic $(INCLUDES) $< -o bin/$(basename $(@F)) -L /usr/local/lib/ -lgtest -lboost_regex -L lib -lnpy_array -Wl,-rpath=./lib
 
 
 

@@ -27,3 +27,8 @@ npy_array_exception_type npy_array_exception::exception_type() const
 {
     return _exception_type;
 }
+
+const char* npy_dtype_exception::what()
+{
+    return "Invalid Dtype!";
+}

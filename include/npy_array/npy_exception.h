@@ -22,3 +22,9 @@ public:
 private:
     npy_array_exception_type _exception_type;
 };
+
+class npy_dtype_exception : std::exception
+{
+public:
+    const char* what();
+};

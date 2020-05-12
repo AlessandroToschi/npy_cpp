@@ -3,8 +3,10 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <complex>
 
 #include "npy_array/endianess.h"
+#include "npy_array/npy_exception.h"
 
 enum npy_dtype_kind
 {
@@ -20,37 +22,56 @@ class npy_dtype
 {
 public:
     npy_dtype() noexcept;
+    npy_dtype(const std::string& dtype_string);
 
     npy_dtype(const npy_dtype& other) = default;
-    npy_dtype(npy_dtype&& other) = default;
+    npy_dtype(npy_dtype&& other);
 
     ~npy_dtype() = default;
     
     npy_dtype& operator=(const npy_dtype& other) = default;
-    npy_dtype& operator=(npy_dtype&& other) = default;
+    npy_dtype& operator=(npy_dtype&& other);
 
     npy_dtype_kind kind() const;
     size_t item_size() const;
     npy_endianness byte_order() const;
 
-    template<typename T> static npy_dtype from_type() noexcept;
+    template<typename T> static npy_dtype from_type() noexcept
+    {
+       if(std::is_same<T, bool>::value) return npy_dtype::bool_8();
+       else if(std::is_same<T, int8_t>::value || std::is_same<T, char>::value) return npy_dtype::int_8();
+       else if(std::is_same<T, int16_t>::value) return npy_dtype::int_16();
+       else if(std::is_same<T, int32_t>::value) return npy_dtype::int_32();
+       else if(std::is_same<T, int64_t>::value) return npy_dtype::int_64();
+       else if(std::is_same<T, uint8_t>::value) return npy_dtype::uint_8();
+       else if(std::is_same<T, uint16_t>::value) return npy_dtype::uint_16();
+       else if(std::is_same<T, uint32_t>::value) return npy_dtype::uint_32();
+       else if(std::is_same<T, uint64_t>::value) return npy_dtype::uint_64();
+       else if(std::is_same<T, float>::value) return npy_dtype::float_32();
+       else if(std::is_same<T, double>::value) return npy_dtype::float_64();
+       else if(std::is_same<T, long double>::value) return npy_dtype::float_128();
+       else if(std::is_same<T, std::complex<float>>::value) return npy_dtype::complex_64();
+       else if(std::is_same<T, std::complex<double>>::value) return npy_dtype::complex_128();
+       else if(std::is_same<T, std::complex<long double>>::value) return npy_dtype::complex_256();
+       else return npy_dtype{};
+    }
+
+    static npy_dtype bool_8() noexcept;
+    static npy_dtype int_8() noexcept;
+    static npy_dtype int_16() noexcept;
+    static npy_dtype int_32() noexcept;
+    static npy_dtype int_64() noexcept;
+    static npy_dtype uint_8() noexcept;
+    static npy_dtype uint_16() noexcept;
+    static npy_dtype uint_32() noexcept;
+    static npy_dtype uint_64() noexcept;
+    static npy_dtype float_32() noexcept;
+    static npy_dtype float_64() noexcept;
+    static npy_dtype float_128() noexcept;
+    static npy_dtype complex_64() noexcept;
+    static npy_dtype complex_128() noexcept;
+    static npy_dtype complex_256() noexcept;    
     
-    static npy_dtype binary();
-    static npy_dtype int_8();
-    static npy_dtype int_16();
-    static npy_dtype int_32();
-    static npy_dtype int_64();
-    static npy_dtype uint_8();
-    static npy_dtype uint_16();
-    static npy_dtype uint_32();
-    static npy_dtype uint_64();
-    static npy_dtype float_16();
-    static npy_dtype float_32();
-    static npy_dtype float_64();
-    static npy_dtype float_128();
-    static npy_dtype complex_64();
-    static npy_dtype complex_128();
-    static npy_dtype complex_256();
 private:
     npy_dtype(npy_dtype_kind kind, size_t item_size, npy_endianness byte_order=get_endianess()) noexcept;
 
