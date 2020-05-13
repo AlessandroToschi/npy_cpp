@@ -3,18 +3,14 @@
 
 #include "npy_array/npy_dtype.h"
 
-void test_for_equality(npy_dtype& first, npy_dtype& second)
+bool operator==(const npy_dtype& a, const npy_dtype& b)
 {
-    EXPECT_EQ(first.kind(), second.kind());
-    EXPECT_EQ(first.item_size(), second.item_size());
-    EXPECT_EQ(first.byte_order(), second.byte_order());
+    return a.kind() == b.kind() && a.item_size() == b.item_size() && a.byte_order() == b.byte_order();
 }
 
-void test_for_inequality(npy_dtype& first, npy_dtype& second)
+bool operator!=(const npy_dtype& a, const npy_dtype& b)
 {
-    EXPECT_NE(first.kind(), second.kind());
-    EXPECT_NE(first.item_size(), second.item_size());
-    EXPECT_NE(first.byte_order(), second.byte_order());
+    return !(a == b);
 }
 
 TEST(NPYDtypeTest, EmptyConstructorTest)
@@ -31,13 +27,13 @@ TEST(NPYDtypeTest, CopyTest)
     auto dt1 = npy_dtype::bool_8();
     auto dt2{dt1};
 
-    test_for_equality(dt1, dt2);
+    EXPECT_EQ(dt1, dt2);
     EXPECT_NE(&dt1, &dt2);
 
     auto dt3 = npy_dtype::float_128();
     auto dt4 = dt3;
 
-    test_for_equality(dt3, dt4);
+    EXPECT_EQ(dt3, dt4);
     EXPECT_NE(&dt3, &dt4);
 }
 
@@ -47,9 +43,9 @@ TEST(NPYDtypeTest, MoveTest)
     auto dt1 = npy_dtype::bool_8();
     auto dt2{std::move(dt1)};
 
-    test_for_inequality(dt1, dt2);
+    EXPECT_NE(dt1, dt2);
     EXPECT_NE(&dt1, &dt2);
-    test_for_equality(dt1, dt);
+    EXPECT_EQ(dt1, dt);
     EXPECT_EQ(dt2.kind(), npy_dtype_kind::boolean);
     EXPECT_EQ(dt2.item_size(), sizeof(bool));
     EXPECT_EQ(dt2.byte_order(), get_endianess());
@@ -57,9 +53,9 @@ TEST(NPYDtypeTest, MoveTest)
     auto dt3 = npy_dtype::float_128();
     auto dt4 = std::move(dt3);
 
-    test_for_inequality(dt3, dt4);
+    EXPECT_NE(dt3, dt4);
     EXPECT_NE(&dt3, &dt4);
-    test_for_equality(dt3, dt);
+    EXPECT_EQ(dt3, dt);
     EXPECT_EQ(dt4.kind(), npy_dtype_kind::floating_point);
     EXPECT_EQ(dt4.item_size(), sizeof(long double));
     EXPECT_EQ(dt4.byte_order(), get_endianess());
@@ -73,7 +69,7 @@ TEST(NPYDtypeTest, BuiltinTypes)
     EXPECT_EQ(dt.kind(), npy_dtype_kind::boolean);
     EXPECT_EQ(dt.item_size(), sizeof(bool));
     EXPECT_EQ(dt.item_size(), 1);
-    EXPECT_EQ(dt.byte_order(), machine_endianess);
+    EXPECT_EQ(dt.byte_order(), npy_endianness::not_applicable);
 
     dt = npy_dtype::int_8();
     EXPECT_EQ(dt.kind(), npy_dtype_kind::integer);
@@ -81,7 +77,7 @@ TEST(NPYDtypeTest, BuiltinTypes)
     EXPECT_EQ(dt.item_size(), sizeof(signed char));
     EXPECT_EQ(dt.item_size(), sizeof(char));
     EXPECT_EQ(dt.item_size(), 1);
-    EXPECT_EQ(dt.byte_order(), machine_endianess);
+    EXPECT_EQ(dt.byte_order(), npy_endianness::not_applicable);
 
     dt = npy_dtype::int_16();
     EXPECT_EQ(dt.kind(), npy_dtype_kind::integer);
@@ -109,7 +105,7 @@ TEST(NPYDtypeTest, BuiltinTypes)
     EXPECT_EQ(dt.item_size(), sizeof(uint8_t));
     EXPECT_EQ(dt.item_size(), sizeof(unsigned char));
     EXPECT_EQ(dt.item_size(), 1);
-    EXPECT_EQ(dt.byte_order(), machine_endianess);
+    EXPECT_EQ(dt.byte_order(), npy_endianness::not_applicable);
 
     dt = npy_dtype::uint_16();
     EXPECT_EQ(dt.kind(), npy_dtype_kind::not_signed);
@@ -173,74 +169,72 @@ TEST(NPYDtypeTest, FromType)
 {
     auto dt = npy_dtype::from_type<bool>();
     auto test = npy_dtype::bool_8();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<char>();
     test = npy_dtype::int_8();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
     dt = npy_dtype::from_type<signed char>();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<short>();
     test = npy_dtype::int_16();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<int>();
     test = npy_dtype::int_32();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<long>();
     test = npy_dtype::int_64();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<unsigned char>();
     test = npy_dtype::uint_8();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<unsigned short>();
     test = npy_dtype::uint_16();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<unsigned int>();
     test = npy_dtype::uint_32();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<unsigned long>();
     test = npy_dtype::uint_64();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<float>();
     test = npy_dtype::float_32();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<double>();
     test = npy_dtype::float_64();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<long double>();
     test = npy_dtype::float_128();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<std::complex<float>>();
     test = npy_dtype::complex_64();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<std::complex<double>>();
     test = npy_dtype::complex_128();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 
     dt = npy_dtype::from_type<std::complex<long double>>();
     test = npy_dtype::complex_256();
-    test_for_equality(dt, test);
+    EXPECT_EQ(dt, test);
 }
 
 TEST(NPYDtypeTest, FromString)
 {
-    char c = 'b';
-    auto x = static_cast<npy_dtype_kind>(c);
-    auto b = static_cast<npy_dtype_kind>('m');
-    bool d = x == c;
-    bool s = b == 'm';
+    npy_dtype::from_string("f");
+    npy_dtype p = npy_dtype::from_string("b1");
+    npy_dtype g = npy_dtype::from_string("<b");
 }
 
 int main(int argc, char* argv[])

@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <complex>
 
+#include <boost/regex.hpp>
+
 #include "npy_array/endianess.h"
 #include "npy_array/npy_exception.h"
 
@@ -22,7 +24,6 @@ class npy_dtype
 {
 public:
     npy_dtype() noexcept;
-    npy_dtype(const std::string& dtype_string);
 
     npy_dtype(const npy_dtype& other) = default;
     npy_dtype(npy_dtype&& other);
@@ -53,8 +54,9 @@ public:
        else if(std::is_same<T, std::complex<float>>::value) return npy_dtype::complex_64();
        else if(std::is_same<T, std::complex<double>>::value) return npy_dtype::complex_128();
        else if(std::is_same<T, std::complex<long double>>::value) return npy_dtype::complex_256();
-       else return npy_dtype{};
+       else return npy_dtype::null();
     }
+    static npy_dtype from_string(const std::string& dtype_string) noexcept;
 
     static npy_dtype bool_8() noexcept;
     static npy_dtype int_8() noexcept;
@@ -71,6 +73,7 @@ public:
     static npy_dtype complex_64() noexcept;
     static npy_dtype complex_128() noexcept;
     static npy_dtype complex_256() noexcept;    
+    static npy_dtype null() noexcept;
     
 private:
     npy_dtype(npy_dtype_kind kind, size_t item_size, npy_endianness byte_order=get_endianess()) noexcept;

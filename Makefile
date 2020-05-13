@@ -28,15 +28,11 @@ make_dir:
 	@mkdir -p ./bin
 
 shared_lib: $(OBJECT_FILES)
-	$(CXX) -shared $(OBJECT_FILES) -o lib/libnpy_array.so -L /usr/local -lboost_regex
+	$(CXX) -shared $(OBJECT_FILES) -o lib/libnpy_array.so -L /usr/local/lib -lboost_regex
 
 build/%.o: %.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@
-
-run_test:
-	g++ $(CXX_FLAGS) -I /usr/local/include/ npy_array_test.cpp -o ./test/npy_array_test -L /usr/local/lib/ -lgtest -lboost_regex
-	./test/npy_array_test 
 
 .PHONY: test
 test: shared_lib $(TEST_OBJECT_FILES)
