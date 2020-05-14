@@ -39,10 +39,18 @@ npy_dtype_kind npy_dtype::kind() const {return _kind;}
 size_t npy_dtype::item_size() const {return _item_size;}
 npy_endianness npy_dtype::byte_order() const {return _byte_order;}
 
+std::string npy_dtype::str() const
+{
+    std::string dtype_string{};
+    dtype_string.push_back(static_cast<char>(_byte_order));
+    dtype_string.push_back(static_cast<char>(_kind));
+    dtype_string.append(std::to_string(_item_size));
+    return dtype_string;
+}
+
 npy_dtype npy_dtype::from_string(const std::string& dtype_string) noexcept
 {
-    //([=<>|])?([bsuifc])(\d{1,2})?
-    boost::regex dtype_pattern{R"(([=<>|])?((b1?)|(i|u)(1|2|4|8)?|((f)(4|8|16)?)|(c)(8|16|32)?)$)"};
+    boost::regex dtype_pattern{R"((\|b1|\|u1|\|i1)|(^[<>=]?)((?<!\|)[iufc])((?<=[iu])2|(?<=[iuf])4|(?<=[uifc])8|(?<=[fc])16|(?<=[c])32)?$)"};
     boost::match_results<std::string::const_iterator> match_results{};
 
     npy_dtype_kind kind;
@@ -51,46 +59,47 @@ npy_dtype npy_dtype::from_string(const std::string& dtype_string) noexcept
 
     if(boost::regex_search(dtype_string.cbegin(), dtype_string.cend(), match_results, dtype_pattern))
     {
-        if(match_results.size() == 11)
+        if(match_results.size() == 5)
         {
-            if(match_results[1].str() != "")
+            if(match_results[1].matched)
             {
-                npy_endianness requested_byte_order = static_cast<npy_endianness>(match_results[1].str()[0]);
-                byte_order = requested_byte_order == npy_endianness::native ? get_endianess() : requested_byte_order;
+                auto one_byte_dtype = match_results[1].str();
+
+                if(one_byte_dtype == "|b1") return npy_dtype::bool_8();
+                else if(one_byte_dtype == "|i1") return npy_dtype::int_8();
+                else if(one_byte_dtype == "|u1") return npy_dtype::uint_8();
+                else return npy_dtype::null();
             }
-        }
-        /*
-        if(match_results.size() == 4)
-        {
-            auto byte_o = match_results[1].str();
-        }
-        if(match_results.size() == 2)
-        {
-            switch (static_cast<npy_dtype_kind>(match_results[1].str()[0]))
+
+            if(match_results[2].matched)
             {
-            case npy_dtype_kind::boolean:
-                return npy_dtype::bool_8();
-            case npy_dtype_kind::integer:
-                return npy_dtype::int_64();
-            case npy_dtype_kind::not_signed:
-                return npy_dtype::uint_64();
-            case npy_dtype_kind::floating_point:
-                return npy_dtype::float_64();
-            case npy_dtype_kind::complex:
-                return npy_dtype::complex_128();
-            default:
-                return npy_dtype::null();
+                npy_endianness requested_endianess = static_cast<npy_endianness>(match_results[2].str()[0]);
+
+                if(requested_endianess != npy_endianness::native) byte_order = requested_endianess;
             }
+
+            if(match_results[3].matched) kind = static_cast<npy_dtype_kind>(match_results[3].str()[0]);
+            else return npy_dtype::null();
+
+            if(match_results[4].matched) item_size = std::stoul(match_results[4].str());
+            else
+            {
+                switch (kind)
+                {
+                case npy_dtype_kind::integer:
+                case npy_dtype_kind::floating_point:
+                case npy_dtype_kind::not_signed:
+                    item_size = 8;
+                    break;
+                case npy_dtype_kind::complex:
+                    item_size = 16;
+                    break;
+                default:
+                    return npy_dtype::null();
+                }
+            }
+            return npy_dtype(kind, item_size, byte_order);
         }
-        else if(match_results.size() == 3)
-        {
-            
-        }
-        for(auto& x : match_results)
-        {
-            std::cout << x.str() << std::endl;
-        }
-        */
     }
     return npy_dtype::null();
 }

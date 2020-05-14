@@ -36,7 +36,7 @@ build/%.o: %.cpp
 
 .PHONY: test
 test: shared_lib $(TEST_OBJECT_FILES)
-	@cp -r test_resources bin/test_resources
+	@cp -r test_resources bin/
 
 %_test.o: %_test.cpp
 	@echo $(@F)

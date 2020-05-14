@@ -17,7 +17,7 @@ enum npy_dtype_kind
     not_signed = 'u',
     floating_point = 'f',
     complex = 'c',
-    unkwown = '\0'
+    unkwown = '!'
 };
 
 class npy_dtype
@@ -36,6 +36,7 @@ public:
     npy_dtype_kind kind() const;
     size_t item_size() const;
     npy_endianness byte_order() const;
+    std::string str() const;
 
     template<typename T> static npy_dtype from_type() noexcept
     {

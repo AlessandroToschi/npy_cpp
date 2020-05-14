@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <typeinfo>
+#include <fstream>
 
 #include "npy_array/npy_dtype.h"
 
@@ -48,7 +49,7 @@ TEST(NPYDtypeTest, MoveTest)
     EXPECT_EQ(dt1, dt);
     EXPECT_EQ(dt2.kind(), npy_dtype_kind::boolean);
     EXPECT_EQ(dt2.item_size(), sizeof(bool));
-    EXPECT_EQ(dt2.byte_order(), get_endianess());
+    EXPECT_EQ(dt2.byte_order(), npy_endianness::not_applicable);
     
     auto dt3 = npy_dtype::float_128();
     auto dt4 = std::move(dt3);
@@ -230,11 +231,72 @@ TEST(NPYDtypeTest, FromType)
     EXPECT_EQ(dt, test);
 }
 
+TEST(NPYDtypeTest, ToString)
+{
+    EXPECT_EQ(npy_dtype::null().str(), "|!0");
+    EXPECT_EQ(npy_dtype::bool_8().str(), "|b1");
+    EXPECT_EQ(npy_dtype::int_8().str(), "|i1");
+    EXPECT_EQ(npy_dtype::int_16().str(), "<i2");
+    EXPECT_EQ(npy_dtype::int_32().str(), "<i4");
+    EXPECT_EQ(npy_dtype::int_64().str(), "<i8");
+    EXPECT_EQ(npy_dtype::uint_8().str(), "|u1");
+    EXPECT_EQ(npy_dtype::uint_16().str(), "<u2");
+    EXPECT_EQ(npy_dtype::uint_32().str(), "<u4");
+    EXPECT_EQ(npy_dtype::uint_64().str(), "<u8");
+    EXPECT_EQ(npy_dtype::float_32().str(), "<f4");
+    EXPECT_EQ(npy_dtype::float_64().str(), "<f8");
+    EXPECT_EQ(npy_dtype::float_128().str(), "<f16");
+    EXPECT_EQ(npy_dtype::complex_64().str(), "<c8");
+    EXPECT_EQ(npy_dtype::complex_128().str(), "<c16");
+    EXPECT_EQ(npy_dtype::complex_256().str(), "<c32");
+}
+
+
 TEST(NPYDtypeTest, FromString)
 {
-    npy_dtype::from_string("f");
-    npy_dtype p = npy_dtype::from_string("b1");
-    npy_dtype g = npy_dtype::from_string("<b");
+    npy_dtype null_dtype = npy_dtype::null();
+
+    EXPECT_EQ(npy_dtype::from_string(""), null_dtype);
+    EXPECT_EQ(npy_dtype::from_string("435hsdfbghdfgb485949trruifbdjbgjdsf"), null_dtype);
+
+    std::ifstream invalid_dtype_strings_file{"./test_resources/invalid_dtype_strings.txt"};
+
+    if(invalid_dtype_strings_file)
+    {
+        std::string dtype_string{};
+        while(std::getline(invalid_dtype_strings_file, dtype_string))
+        {
+            EXPECT_EQ(npy_dtype::from_string(dtype_string), null_dtype);
+        }
+    }
+
+    std::ifstream valid_dtype_strings_file{"./test_resources/valid_dtype_strings.txt"};
+
+    if(valid_dtype_strings_file)
+    {
+        std::string dtype_string{};
+        while(std::getline(valid_dtype_strings_file, dtype_string))
+        {
+            EXPECT_NE(npy_dtype::from_string(dtype_string), null_dtype);
+        }
+    }
+
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::null().str()), npy_dtype::null());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::bool_8().str()), npy_dtype::bool_8());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::int_8().str()), npy_dtype::int_8());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::int_16().str()), npy_dtype::int_16());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::int_32().str()), npy_dtype::int_32());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::int_64().str()), npy_dtype::int_64());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::uint_8().str()), npy_dtype::uint_8());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::uint_16().str()), npy_dtype::uint_16());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::uint_32().str()), npy_dtype::uint_32());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::uint_64().str()), npy_dtype::uint_64());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::float_32().str()), npy_dtype::float_32());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::float_64().str()), npy_dtype::float_64());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::float_128().str()),  npy_dtype::float_128());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::complex_64().str()), npy_dtype::complex_64());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::complex_128().str()),  npy_dtype::complex_128());
+    EXPECT_EQ(npy_dtype::from_string(npy_dtype::complex_256().str()),  npy_dtype::complex_256());
 }
 
 int main(int argc, char* argv[])
