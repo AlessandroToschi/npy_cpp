@@ -122,32 +122,141 @@ public:
      * @return npy_dtype& this object.
      */
     npy_dtype& operator=(const npy_dtype& other) = default;
+    /**
+     * @brief Move assignment, move the given dtype object to this.
+     * 
+     * The move assignment leaves the other object identical to the null dtype.
+     * 
+     * @param other the dtype object to move.
+     * @return npy_dtype& this object.
+     */
     npy_dtype& operator=(npy_dtype&& other);
 
+    /**
+     * @brief The kind of this dtype object.
+     * 
+     * Available kinds:
+     * boolean, intgers, unsigned integers, floating points, and complex.
+     * 
+     * @return npy_dtype_kind the kind of this dtype object.
+     */
     npy_dtype_kind kind() const;
+    /**
+     * @brief The size in bytes taken by an element having this dtype.
+     * 
+     * A valid dtype has a size always >= 0.
+     * The null dtype has a size of 0.
+     * 
+     * @return size_t the size in bytes.
+     */
     size_t item_size() const;
+    /**
+     * @brief The byte order, or endianess, of this dtype when the item size is >= 2.
+     * 
+     * The byte order does not apply when item size is 1 and also to the null dtype.
+     * The orders can be: little endian or big endian.
+     * Native order is only used for dtype string format.
+     * 
+     * @return npy_endianness the byte order of the dtype.
+     */
     npy_endianness byte_order() const;
+    /**
+     * @brief The string represention of a dtype object according to NumPy dtype string format.
+     * 
+     * For a native type, the string is composed of 3 or 4 characters.
+     * The first character is the byte order: '<' for little endian and '>' for big endian.
+     * The second character is the kind of the dtype: 'b' for booleans, 'i' for integers, 'u' for unsigned, 'f' for floating points, and 'c' for complex.
+     * The last character or the last two characters are the string version of the item size which can take
+     * 1 character for sizes 1, 2, 4, 8, and two characters for the size 16.
+     * 
+     * @return std::string the string representation of a dtype object.
+     */
     std::string str() const;
 
+    /**
+     * @brief Return an implemented dtype given the type provided by the user.
+     * 
+     * The only implemented and accepted C++ types are:
+     * bool for 8-bit boolean value, 
+     * char or int8_t for 8-bit signed integer value, 
+     * int16_t or short for 16-bit signed integer value,
+     * int32_t or int for 32-bit signed integer value,
+     * int64_t or long for 64-bit signed integer value,
+     * uint8_t or unsigned char for 8-bit unsigned integer value,
+     * uint16_t or unsigned short for 16-bit unsigned integer value,
+     * uint32_t or unsigned int for 32-bit unsigned integer value,
+     * uint64_t or unsigned long for 64-bit unsigned integer value,
+     * float for 32-bit floating point value,
+     * double for 64-bit floating point value,
+     * long double for 128-bit floating point value,
+     * std::complex<float> for 64-bit complex,
+     * std::complex<double> for 128-bit complex,
+     * std::complex<long double> for 256-bit complex,
+     * 
+     * If the user provided type is not one of the above listed, then it is returned the null dtype.
+     * 
+     * @tparam T The C++ type the user want to describe as ndtype.
+     * @return npy_dtype The corresponding dtype of null dtype if the C++ type is not implemented or accepted.
+     */
     template<typename T> static npy_dtype from_type() noexcept
     {
-       if(std::is_same<T, bool>::value) return npy_dtype::bool_8();
-       else if(std::is_same<T, int8_t>::value || std::is_same<T, char>::value) return npy_dtype::int_8();
-       else if(std::is_same<T, int16_t>::value) return npy_dtype::int_16();
-       else if(std::is_same<T, int32_t>::value) return npy_dtype::int_32();
-       else if(std::is_same<T, int64_t>::value) return npy_dtype::int_64();
-       else if(std::is_same<T, uint8_t>::value) return npy_dtype::uint_8();
-       else if(std::is_same<T, uint16_t>::value) return npy_dtype::uint_16();
-       else if(std::is_same<T, uint32_t>::value) return npy_dtype::uint_32();
-       else if(std::is_same<T, uint64_t>::value) return npy_dtype::uint_64();
-       else if(std::is_same<T, float>::value) return npy_dtype::float_32();
-       else if(std::is_same<T, double>::value) return npy_dtype::float_64();
-       else if(std::is_same<T, long double>::value) return npy_dtype::float_128();
-       else if(std::is_same<T, std::complex<float>>::value) return npy_dtype::complex_64();
-       else if(std::is_same<T, std::complex<double>>::value) return npy_dtype::complex_128();
-       else if(std::is_same<T, std::complex<long double>>::value) return npy_dtype::complex_256();
-       else return npy_dtype::null();
+        // Check if the user provided type is one of the implemented ones.
+        // If yes, then return the dtype, otherwise return the null dtype.
+        if(std::is_same<T, bool>::value) return npy_dtype::bool_8();
+        else if(std::is_same<T, int8_t>::value || std::is_same<T, char>::value) return npy_dtype::int_8();
+        else if(std::is_same<T, int16_t>::value) return npy_dtype::int_16();
+        else if(std::is_same<T, int32_t>::value) return npy_dtype::int_32();
+        else if(std::is_same<T, int64_t>::value) return npy_dtype::int_64();
+        else if(std::is_same<T, uint8_t>::value) return npy_dtype::uint_8();
+        else if(std::is_same<T, uint16_t>::value) return npy_dtype::uint_16();
+        else if(std::is_same<T, uint32_t>::value) return npy_dtype::uint_32();
+        else if(std::is_same<T, uint64_t>::value) return npy_dtype::uint_64();
+        else if(std::is_same<T, float>::value) return npy_dtype::float_32();
+        else if(std::is_same<T, double>::value) return npy_dtype::float_64();
+        else if(std::is_same<T, long double>::value) return npy_dtype::float_128();
+        else if(std::is_same<T, std::complex<float>>::value) return npy_dtype::complex_64();
+        else if(std::is_same<T, std::complex<double>>::value) return npy_dtype::complex_128();
+        else if(std::is_same<T, std::complex<long double>>::value) return npy_dtype::complex_256();
+        else return npy_dtype::null();
     }
+    /**
+     * @brief Given a dtype string representation, return the correspoding dtype object.
+     * 
+     * For a native type, the string is composed of 3 or 4 characters.
+     * The first character is the byte order: '<' for little endian and '>' for big endian, '=' for the machine native endianess, and '|' for the single byte types, like char or boolean.
+     * If the endianess character is omitted, then the endianess is assumed to be equal to the machine one.
+     * The second character is the kind of the dtype: 'b' for booleans, 'i' for integers, 'u' for unsigned, 'f' for floating points, and 'c' for complex.
+     * This character is mandatory.
+     * The last character or the last two characters are the string version of the item size which can take
+     * 1 character for sizes 1, 2, 4, 8, and two characters for the size 16.
+     * Notes that not all the possible combinations are possible and implemented.
+     * 
+     * Boolean
+     * The only allowed combination is "|b1".
+     * 
+     * Integers
+     * The only allowed combination for item size 1 is "|i1".
+     * The only allowed combinations for item sizes >= 2 are "[<>=]?i[2,4,8]?"
+     * If both endianess and item size are omitted, then it is assumed to be int64_t.
+     * 
+     * Unsigned Integers
+     * The only allowed combination for item size 1 is "|u1".
+     * The only allowed combinations for item sizes >= 2 are "[<>=]?u[2,4,8]?"
+     * If both endianess and item size are omitted, then it is assumed to be uint64_t.
+     * 
+     * Floating Points
+     * The only allowed combinations are "[<>=]?f[4,8,16]?"
+     * If both endianess and item size are omitted, then it is assumed to be double.
+     * 
+     * Complex
+     * The only allowed combinations are "[<>=]?c[8,16,32]?"
+     * If both endianess and item size are omitted, then it is assumed to be std::complex<double>.
+     * 
+     * If the string is malformed or the type requested is not implemented, then it is returned the null dtype.
+     * 
+     * @param dtype_string the dtype string representation.
+     * @return npy_dtype the dtype object for the dtype string, null if the string is wrong.
+     */
     static npy_dtype from_string(const std::string& dtype_string) noexcept;
 
     static npy_dtype bool_8() noexcept;
