@@ -132,6 +132,9 @@ public:
      */
     npy_dtype& operator=(npy_dtype&& other);
 
+
+    //explicit operator bool() const noexcept;
+
     /**
      * @brief The kind of this dtype object.
      * 
@@ -377,5 +380,10 @@ private:
     size_t _item_size; // The private item size in bytes.
     npy_endianness _byte_order; // The private dtype's byte order.
 };
+
+bool operator==(const npy_dtype& a, const npy_dtype& b);
+bool operator!=(const npy_dtype& a, const npy_dtype& b);
+
+
 
 #endif /* D4AB99B8_10DA_46D7_9CFA_559B460F6ABA */
