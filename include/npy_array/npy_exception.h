@@ -1,3 +1,6 @@
+#ifndef E54F2198_A9A7_41DA_8A9B_8950CF35D709
+#define E54F2198_A9A7_41DA_8A9B_8950CF35D709
+
 #include <exception>
 
 enum npy_array_exception_type
@@ -28,3 +31,4 @@ class npy_dtype_exception : std::exception
 public:
     const char* what();
 };
+#endif /* E54F2198_A9A7_41DA_8A9B_8950CF35D709 */

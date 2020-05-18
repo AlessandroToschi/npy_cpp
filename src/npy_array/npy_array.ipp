@@ -12,8 +12,8 @@ npy_array<T>::npy_array(const std::string& array_path)
     uint8_t major_version; 
     uint8_t minor_version; // The minor version of the file, just for reference.
     // The header length in bytes.
-    // Version 1 header length is 2 bytes, Version 2 header length is 4 bytes.
-    uint32_t header_length;
+    // Version 1 header length is 2 bytes.
+    uint16_t header_length;
     // The header of the file is a Python dictionary represented as string which contains three fields:
     // 'desc': the NumPy.dtype object representation.
     // 'fortran_order': true if the values in the array are stored in fortran order, otherwise false.
@@ -55,10 +55,14 @@ npy_array<T>::npy_array(const std::string& array_path)
         // To reverse the bytes, we use the intrinsic defined in endian.h
         if(major_version == 0x01)
         {
-            uint16_t header_length_v1;
-            array_stream.read(reinterpret_cast<char*>(&header_length_v1), 2);
-            header_length = machine_endianess == npy_endianness::little_endian ? header_length_v1 : __bswap_16(header_length_v1);
+            array_stream.read(reinterpret_cast<char*>(&header_length), 2);
+            header_length = machine_endianess == npy_endianness::little_endian ? header_length : __bswap_16(header_length);
         }
+        else
+        {
+            throw npy_array_exception{npy_array_exception_type::unsupported_version};
+        }
+        /*
         // If the version is 2, then the header length is 4 bytes.
         // It is directly read in the header_length of the function.
         // The same consideration for the endianess applies for the version 2 header length.
@@ -75,10 +79,8 @@ npy_array<T>::npy_array(const std::string& array_path)
             throw npy_array_exception{npy_array_exception_type::unsupported_version};
         }
         // Version 3 still not supported or invalid version found, throw an exception.
-        else
-        {
-            throw npy_array_exception{npy_array_exception_type::unsupported_version};
-        }
+
+        */
         
         // Reserve the required memory for storing the header and read it from the file.
         // If the memory reservation fails (very unlikely tho), it will throw a bad_alloc exception, which is caught.
@@ -90,9 +92,9 @@ npy_array<T>::npy_array(const std::string& array_path)
         // If the header parse fails to assign a value to any of such fields, then this function will throw an exception.
         this->parse_header(header);
 
-        this->data.resize(this->size());
+        //this->data.resize(this->size());
 
-        array_stream.read(reinterpret_cast<char*>(this->data.data()), this->byte_size());
+        //array_stream.read(reinterpret_cast<char*>(this->data.data()), this->byte_size());
     }
     catch(const std::ios_base::failure& failure_exception)
     {
@@ -113,102 +115,128 @@ npy_array<T>::npy_array(const std::string& array_path)
 }
 
 template<typename T>
+npy_array<T>::npy_array(const std::vector<size_t>& shape)
+    : _shape{shape}, _data{}, _dtype{}, _fortran_order{false}
+{
+    npy_dtype requested_dtype = npy_dtype::from_type<T>();
+
+    if(requested_dtype)
+    {
+        _dtype = std::move(requested_dtype);
+    }
+    else
+    {
+        //THROW SOMETHING
+    }
+    
+    _data.resize(this->size());
+}
+
+template<typename T>
+npy_array<T>::npy_array(std::vector<size_t>&& shape)
+    : _shape{std::move(shape)}, _data{}, _dtype{}, _fortran_order{false}
+{
+    npy_dtype requested_dtype = npy_dtype::from_type<T>();
+
+    if(requested_dtype)
+    {
+        _dtype = std::move(requested_dtype);
+    }
+    else
+    {
+        //THROW SOMETHING
+    }
+    
+    _data.resize(this->size());
+}
+
+template<typename T>
+npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& data)
+    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+{
+    if()
+} 
+
+template<typename T>
+size_t npy_array<T>::size() const noexcept
+{
+    return std::accumulate(_shape.cbegin(), _shape.cend(), 1, std::multiplies<size_t>());
+}
+
+size_t size(const std::vector<size_t>& shape_vector)
+{
+    return
+}
+
+template<typename T>
 void npy_array<T>::parse_header(const std::string& header)
 {
-    // Create a copy of the header string and remove from it the whitespace and new line characters.
+    std::array<char, 5> charaters_to_remove{' ', '\n', '{', '}', '\''};
+    // Create a copy of the header string because we need to modify it.
     auto header_copy{header};
-    header_copy.erase(std::remove_if(header_copy.begin(), header_copy.end(), [](char c){
-        return std::isspace(c) || c == '\n';
+    // Remove the unwanted characters from the header copy string.
+    header_copy.erase(std::remove_if(header_copy.begin(), header_copy.end(), [&](char c)
+    {
+        return std::find(charaters_to_remove.cbegin(), charaters_to_remove.cend(), c) != charaters_to_remove.cend();
     }), header_copy.end());
 
-    //boost::regex pattern{R"('(\w+)':('([<>]\w+)'|\w+|\(\d+(?:,\d+|,)*\)))"};
-    //'(\w+)'
-    boost::regex pattern{R"((\w+))"}; // Regex pattern that catches any word enclosed by '.
-    // The regex iterator that will iterate over all the matches in the header string.
-    boost::sregex_iterator next_iterator{header_copy.begin(), header_copy.end(), pattern};
-    // The end of a regex iterator is assumed to be the empty iterator.
-    boost::sregex_iterator end_iterator{};
-    // Mask that contains 3 flags, each flag is 0 if the header key has not been found, otherwise is 1.
-    // Bit 0: descr, Bit 1: fortran_order, and Bit 2: shape.
-    std::bitset<3> fields_mask{0};
-    
-    //
-    while(next_iterator != end_iterator)
-    {
-        // If a match has been found, retrieve the match list and extract the first group which will contain the header key.
-        const auto match_results = *next_iterator;
+    // Find the indexes of the left and right brackes within the header string.
+    // Both key value pairs and shape elements are comma-separeted.
+    // We need to change the separation of the shape by replacing the comma in the shape string with another token that easily recognizable, like an underscore.
+    auto left_bracket_index = std::find(header_copy.begin(), header_copy.end(), '(');
+    auto right_bracket_index = std::find(header_copy.begin(), header_copy.end(), ')');
 
-        // We ensure that the match is not empty and contains at least two sub matches:
-        // the first match is the header key with the apices, like 'descr'.
-        // the second match is the header key itself, like descr.
-        if(match_results.empty() || match_results.size() < 2)
+    if(left_bracket_index != header_copy.end() && right_bracket_index != header_copy.end())
+    {
+        std::replace(left_bracket_index, right_bracket_index, ',', '_');
+    }
+    else
+    {
+        throw boost::regex_error{boost::regex_constants::error_unknown};
+    }
+    
+
+    std::vector<std::string> header_key_value_pairs;
+
+    boost::split(header_key_value_pairs, header_copy, [](char c){return c == ',';});
+
+    for(auto& key_value_pair : header_key_value_pairs)
+    {
+        std::vector<std::string> key_value{};
+        boost::split(key_value, key_value_pair, [](char c){return c == ':';});
+
+        if(key_value[0] == "descr")
+        {
+            npy_dtype requested_dtype = npy_dtype::from_string(key_value[1]);
+
+            if(requested_dtype && npy_dtype::from_type<T>() == requested_dtype)
+            {
+                _dtype = std::move(requested_dtype);
+            }
+            else
+            {
+                throw boost::regex_error{boost::regex_constants::error_unknown};
+            }
+            
+        }
+        else if(key_value[0] == "fortran_order")
+        {
+            _fortran_order = key_value[1] == "False" ? false : true;
+        }
+        else if(key_value[0] == "shape")
+        {
+            std::vector<std::string> shape_values{};
+            boost::split(shape_values, key_value[1].substr(1, key_value[1].size() - 2), [](char c){return c == '_';});
+            _shape.reserve(shape_values.size());
+            std::transform(shape_values.cbegin(), shape_values.cend(), std::back_inserter(_shape), [](std::string shape_value) -> size_t
+            {
+                return std::strtoul(shape_value.data(), nullptr, 10);
+            });
+        }
+        else
         {
             throw boost::regex_error{boost::regex_constants::error_unknown};
         }
         
-        // Get the second match that is the header key.
-        const auto key = match_results[1];
-
-        if(key.str() == "descr")
-        {
-            boost::regex description_pattern{R"('(<\w+)')"};
-            boost::match_results<std::string::const_iterator> description_match{};
-
-            /*
-            if(!boost::regex_search(key.second, header_copy.cend(), description_match))
-            {
-
-            }
-
-            std::cout << description_match[0].str() << std::endl;
-            */
-            //const auto sub = header_copy.substr()
-            //std::cout << key.first << " " << key.second << std::endl;
-
-            /*
-            const auto description = match[3].str();
-            this->byte_order = get_endianess();
-            this->data_size = std::stoull(description.substr(2));
-
-            if(static_cast<char>(this->byte_order) != description[0])
-            {
-                throw "big endianess not supported";
-            }
-
-            if(sizeof(T) > this->data_size)
-            {
-                throw "type not valid for this anpy";
-            }
-
-            debug_message("NPY Array: Endianess: " << static_cast<char>(this->byte_order) << " Data size: " << this->data_size);
-            */
-        }
-        /*
-        else if(key == "fortran_order")
-        {
-            this->fortran_order = match[2].str() == "False" ? false : true;
-            debug_message("NPY Array: Fortran Order: " << this->fortran_order);
-        }
-        else if(key == "shape")
-        {
-            auto shape_string = match[2].str();
-            boost::regex shape_pattern{R"((\d+))"};
-            boost::sregex_iterator shape_iterator{shape_string.begin(), shape_string.end(), shape_pattern};
-
-            while(shape_iterator != end_iterator)
-            {
-                const auto shape_match = *shape_iterator;
-                this->shape.push_back(std::stoull(shape_match[0].str()));
-                shape_iterator++;
-            }
-
-            debug_message("NPY Array: shape size: " << this->size());
-        }
-        else
-        {
-            throw boost::regex_error{boost::regex_constants::error_backref};
-        }
-        */
-        next_iterator++;
     }
 }

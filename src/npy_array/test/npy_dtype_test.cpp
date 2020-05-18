@@ -4,6 +4,7 @@
 
 #include "npy_array/npy_dtype.h"
 
+/*
 bool operator==(const npy_dtype& a, const npy_dtype& b)
 {
     return a.kind() == b.kind() && a.item_size() == b.item_size() && a.byte_order() == b.byte_order();
@@ -13,6 +14,7 @@ bool operator!=(const npy_dtype& a, const npy_dtype& b)
 {
     return !(a == b);
 }
+*/
 
 TEST(NPYDtypeTest, EmptyConstructorTest)
 {

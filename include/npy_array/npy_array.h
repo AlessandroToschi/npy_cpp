@@ -7,14 +7,16 @@
 #include <iostream>
 #include <iomanip>
 #include <stdint.h>
-#include <boost/regex.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <algorithm>
 #include <numeric>
 #include <functional>
 #include <endian.h>
+#include <array>
 
 #include "npy_array/endianess.h"
 #include "npy_array/npy_exception.h"
+#include "npy_array/npy_dtype.h"
 
 template<typename T>
 class npy_array
@@ -30,13 +32,17 @@ public:
 
     npy_array() = delete;
     npy_array(const npy_array& other) = delete;
-    npy_array(npy_array&& other) = default;
+    npy_array(npy_array&& other) = delete;
 
     ~npy_array() = default;
 
     npy_array& operator=(npy_array other) = delete;
     npy_array& operator=(const npy_array& other) = delete;
-    npy_array& operator=(npy_array&& other) = default;
+    npy_array& operator=(npy_array&& other) = delete;
+
+    size_t size() const noexcept;
+    
+    /*
 
     const T* get_data() const {return this->data.data();};
     T* get_data() {return this->data.data();};
@@ -49,17 +55,17 @@ public:
 
     const std::vector<size_t>& get_shape() const {return this->shape;};
 
-    size_t size() const {return std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<size_t>());};
+    
+    {return std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<size_t>());};
     
     size_t byte_size() const {return this->item_size * this->size();};
+    */
 
 private:
-    std::vector<size_t> shape;
-    std::vector<T> data;
-    bool fortran_order;
-    npy_endianness byte_order;
-    size_t item_size;
-
+    std::vector<size_t> _shape;
+    std::vector<T> _data;
+    npy_dtype _dtype;
+    bool _fortran_order;
 
     void parse_header(const std::string& header);
 };

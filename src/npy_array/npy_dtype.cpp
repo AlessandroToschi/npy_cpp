@@ -43,6 +43,21 @@ npy_dtype& npy_dtype::operator=(npy_dtype&& other)
     return *this;
 }
 
+npy_dtype::operator bool() const noexcept
+{
+    return (*this != npy_dtype::null());
+}
+
+bool npy_dtype::operator==(const npy_dtype& other) const noexcept
+{
+    return _kind == other._kind && _item_size == other._item_size && _byte_order == other._byte_order;
+}
+
+bool npy_dtype::operator!=(const npy_dtype& other) const noexcept
+{
+    return !(*this == other);
+}
+
 npy_dtype_kind npy_dtype::kind() const {return _kind;} // Return the private npy_dtype_kind.
 size_t npy_dtype::item_size() const {return _item_size;} // Return the private item size.
 npy_endianness npy_dtype::byte_order() const {return _byte_order;} // Return the private npy_endianess.
