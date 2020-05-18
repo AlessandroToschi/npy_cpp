@@ -154,18 +154,62 @@ template<typename T>
 npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& data)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
 {
-    if()
+    if(std::accumulate(shape.cbegin(), shape.cend(), 1, std::multiplies<size_t>()) == data.size())
+    {
+        npy_dtype requested_dtype = npy_dtype::from_type<T>();
+
+        if(requested_dtype)
+        {
+            _dtype = std::move(requested_dtype);
+        }
+        else
+        {
+            /* code */
+        }
+        
+
+        _shape = shape;
+        _data = data;
+    }
+    else
+    {
+        /* code */
+    }
+    
 } 
+
+template<typename T>
+npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
+    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+{
+    if(std::accumulate(shape.cbegin(), shape.cend(), 1, std::multiplies<size_t>()) == data.size())
+    {
+        npy_dtype requested_dtype = npy_dtype::from_type<T>();
+
+        if(requested_dtype)
+        {
+            _dtype = std::move(requested_dtype);
+        }
+        else
+        {
+            /* code */
+        }
+        
+
+        _shape = std::move(shape);
+        _data = std::move(data);
+    }
+    else
+    {
+        /* code */
+    }
+    
+}
 
 template<typename T>
 size_t npy_array<T>::size() const noexcept
 {
     return std::accumulate(_shape.cbegin(), _shape.cend(), 1, std::multiplies<size_t>());
-}
-
-size_t size(const std::vector<size_t>& shape_vector)
-{
-    return
 }
 
 template<typename T>

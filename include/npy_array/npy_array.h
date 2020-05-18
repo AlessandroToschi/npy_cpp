@@ -40,18 +40,18 @@ public:
     npy_array& operator=(const npy_array& other) = delete;
     npy_array& operator=(npy_array&& other) = delete;
 
+
+    const std::vector<size_t>& shape() const noexcept;
+    const npy_dtype& dtype() const noexcept;
+    bool fortran_order() const noexcept;
+
     size_t size() const noexcept;
+    size_t byte_size() const noexcept;
     
     /*
 
     const T* get_data() const {return this->data.data();};
     T* get_data() {return this->data.data();};
-
-    npy_endianness get_byte_order() const {return this->byte_order;};
-
-    size_t get_item_size() const {return this->item_size;};
-
-    bool is_fortran_order() const {return this->fortran_order;};
 
     const std::vector<size_t>& get_shape() const {return this->shape;};
 
