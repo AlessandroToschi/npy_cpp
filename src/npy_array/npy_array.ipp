@@ -107,12 +107,22 @@ void npy_array<T>::parse_header(const std::string& header)
         {
             std::vector<std::string> shape_values{};
             boost::split(shape_values, key_value[1].substr(1, key_value[1].size() - 2), [](char c){return c == '_';});
+            shape_values.erase(std::remove_if(shape_values.begin(), shape_values.end(), [](std::string& s)
+            {
+                return s.empty();
+            }), shape_values.end());
             _shape.reserve(shape_values.size());
             std::transform(shape_values.cbegin(), shape_values.cend(), std::back_inserter(_shape), [](std::string shape_value) -> size_t
             {
                 return std::strtoul(shape_value.data(), nullptr, 10);
             });
+
+            if(std::any_of(_shape.cbegin(), _shape.cend(), [](size_t d){return d == 0;}))
+            {
+                throw boost::regex_error{boost::regex_constants::error_unknown};
+            }
         }
+        else if(key_value[0] == "") continue;
         else
         {
             throw boost::regex_error{boost::regex_constants::error_unknown};

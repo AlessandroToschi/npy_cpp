@@ -104,6 +104,101 @@ TEST(NPYArrayTest, ConstructorMajorVersion)
     }
 }
 
+TEST(NPYArrayTest, ConstructorHeaderParsing)
+{
+    try
+    {
+        npy_array<float>{"./test_resources/null_header.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/empty_header.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_dtype.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_descr.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_fortran_order.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_fortran_value.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_shape.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_shape_2.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    try
+    {
+        npy_array<float>{"./test_resources/fake_shape_3.npy"};
+        FAIL();
+    }
+    catch(const npy_array_exception& e)
+    {
+        EXPECT_EQ(e.exception_type(), npy_array_exception_type::ill_formed_header);
+    }
+
+    EXPECT_NO_THROW(npy_array<long>{"./test_resources/fake_shape_4.npy"});
+}
+
 /*
 TEST(NPYArrayTest, ConstructorMagicStringTest)
 {
