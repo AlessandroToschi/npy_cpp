@@ -1,0 +1,113 @@
+ /*
+    // A NumPy array file always starts with the following magic string '\x93NUMPY'.
+    std::string magic_string; 
+    // The major version of the NumPy array. There exists three version:
+    // Version 1: the classic NumPy array having an header of maximum size of 65536 bytes (16-bit).
+    // Version 2: the same as the version 1, but it allows an header of maximum size of 2^32 (32-bit).
+    // Version 3: the same as the version 1, butthe field names are encoded in UTF-8 instead of ASCII.
+    uint8_t major_version; 
+    uint8_t minor_version; // The minor version of the file, just for reference.
+    // The header length in bytes.
+    // Version 1 header length is 2 bytes.
+    uint16_t header_length;
+    // The header of the file is a Python dictionary represented as string which contains three fields:
+    // 'desc': the NumPy.dtype object representation.
+    // 'fortran_order': true if the values in the array are stored in fortran order, otherwise false.
+    // 'shape': the shape of the array.
+    // The header is terminated by a '\n' and padded with spaces ('\x20') to make the whole header even divisible by 64.
+    std::string header;
+    // The input stream object that is used to read the file.
+    std::ifstream array_stream;
+
+    // Get the endianess of this system.
+    npy_endianness machine_endianess = get_endianess();
+
+    // Convert all the iostate bits to exceptions.
+    array_stream.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
+
+    try
+    {
+        // Open the file.
+        array_stream.open(array_path);
+
+        // The magic string is exactly 6 bytes, so we reserve that size to be able to directly read those 6 bytes in the string.
+        magic_string.resize(6);
+        array_stream.read(&magic_string[0], 6);
+
+        // Check if the magic string is corrected, otherwise throw an exception.
+        // The magic string is hard-coded and endianess-invariant since it is a string.
+        if(magic_string != "\x93NUMPY")
+        {
+            throw npy_array_exception{npy_array_exception_type::invalid_magic_string};
+        }
+
+        // Read the major and minor version.
+        array_stream.read(reinterpret_cast<char*>(&major_version), 1);
+        array_stream.read(reinterpret_cast<char*>(&minor_version), 1);
+
+        // If the version is 1, then the header length is 2 bytes.
+        // We use a temporary variable of 2 bytes and then copy the result to the other header_length.
+        // The header length is stored in little-endian order so if we read it in a little endian system there is no problem, otherwise we must reverse the bytes.
+        // To reverse the bytes, we use the intrinsic defined in endian.h
+        if(major_version == 0x01)
+        {
+            array_stream.read(reinterpret_cast<char*>(&header_length), 2);
+            header_length = machine_endianess == npy_endianness::little_endian ? header_length : __bswap_16(header_length);
+        }
+        else
+        {
+            throw npy_array_exception{npy_array_exception_type::unsupported_version};
+        }
+        /*
+        // If the version is 2, then the header length is 4 bytes.
+        // It is directly read in the header_length of the function.
+        // The same consideration for the endianess applies for the version 2 header length.
+        // Still need to working on, so I consider the version 2 as unsupported.
+        else if(major_version == 0x02)
+        {
+            array_stream.read(reinterpret_cast<char*>(&header_length), 4);
+
+            if(machine_endianess == npy_endianness::big_endian)
+            {
+                header_length = __bswap_32(header_length);
+            }
+
+            throw npy_array_exception{npy_array_exception_type::unsupported_version};
+        }
+        // Version 3 still not supported or invalid version found, throw an exception.
+
+        
+        
+        // Reserve the required memory for storing the header and read it from the file.
+        // If the memory reservation fails (very unlikely tho), it will throw a bad_alloc exception, which is caught.
+        header.resize(header_length);
+        array_stream.read(&header[0], header_length);
+
+        // Parse the header of the file.
+        // This function will assign a value to the following field: shape, fortran_order, byte_order, and item size.
+        // If the header parse fails to assign a value to any of such fields, then this function will throw an exception.
+        this->parse_header(header);
+
+        //this->data.resize(this->size());
+
+        //array_stream.read(reinterpret_cast<char*>(this->data.data()), this->byte_size());
+    }
+    catch(const std::ios_base::failure& failure_exception)
+    {
+        throw npy_array_exception{npy_array_exception_type::input_output_error};
+    }
+    catch(const boost::regex_error& regex_exception)
+    {
+        throw npy_array_exception{npy_array_exception_type::ill_formed_header};
+    }
+    catch(const std::bad_alloc& bad_alloc_exception)
+    {
+        throw npy_array_exception{npy_array_exception_type::unsufficient_memory};
+    }
+    catch(const std::exception& exeption)
+    {
+        throw npy_array_exception{npy_array_exception_type::generic};
+    }
+    */
+
+//header_length = machine_endianess == npy_endianness::little_endian ? header_length : __bswap_16(header_length);>

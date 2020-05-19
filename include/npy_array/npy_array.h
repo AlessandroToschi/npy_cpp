@@ -67,6 +67,9 @@ private:
     npy_dtype _dtype;
     bool _fortran_order;
 
+    bool check_magic_string(std::ifstream& array_file);
+    bool check_version(std::ifstream& array_file);
+    std::string read_header(std::ifstream& array_file);
     void parse_header(const std::string& header);
 };
 
