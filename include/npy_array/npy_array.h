@@ -44,6 +44,9 @@ public:
     npy_array& operator=(const npy_array& other) = delete;
     npy_array& operator=(npy_array&& other) = delete;
 
+    explicit opertor bool() const;
+    bool operator==(npy_array& other);
+    bool operator!=(npy_array& other);
 
     const std::vector<size_t>& shape() const noexcept;
     const npy_dtype& dtype() const noexcept;
@@ -51,20 +54,6 @@ public:
 
     size_t size() const noexcept;
     size_t byte_size() const noexcept;
-    
-    /*
-
-    const T* get_data() const {return this->data.data();};
-    T* get_data() {return this->data.data();};
-
-    const std::vector<size_t>& get_shape() const {return this->shape;};
-
-    
-    {return std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<size_t>());};
-    
-    size_t byte_size() const {return this->item_size * this->size();};
-    */
-
 private:
     std::vector<size_t> _shape;
     std::vector<T> _data;

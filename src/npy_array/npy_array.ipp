@@ -1,13 +1,9 @@
 #include "npy_array/npy_array.h"
 
-size_t multiplies_vector(const std::vector<size_t>& vec)
+template<typename Iterator>
+size_t multiplies_vector(const Iterator start, const Iterator end)
 {
-    return std::accumulate(vec.cbegin(), vec.cend(), size_t(1), std::multiplies<size_t>());
-}
-
-size_t multiplies_vector(const std::initializer_list<size_t>& vec)
-{
-    return std::accumulate(vec.begin(), vec.end(), size_t(1), std::multiplies<size_t>());
+    return std::accumulate(start, end, size_t(1), std::multiplies<size_t>());
 }
 
 template<class T> 
@@ -136,6 +132,7 @@ void npy_array<T>::parse_header(const std::string& header)
     }
 }
 
+
 template<typename T>
 npy_array<T>::npy_array(const std::string& array_path)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
@@ -161,7 +158,7 @@ npy_array<T>::npy_array(const std::string& array_path)
 
         this->parse_header(this->read_header(array_file));
 
-        _data.resize(multiplies_vector(_shape));
+        _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
         array_file.read(reinterpret_cast<char*>(_data.data()), _data.size() * sizeof(T));
     }
     catch(const std::ios_base::failure& failure_exception)
@@ -197,7 +194,7 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape)
         throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
     
-    _data.resize(multiplies_vector(_shape));
+    _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
 }
 
 template<typename T>
@@ -214,8 +211,8 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape)
     {
         throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
-    
-    _data.resize(multiplies_vector(_shape));
+
+    _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
 }
 
 template<class T> 
@@ -233,7 +230,7 @@ npy_array<T>::npy_array(std::initializer_list<size_t> shape_list)
         throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
     
-    _data.resize(multiplies_vector(_shape));
+    _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
 }
 
 
@@ -241,7 +238,7 @@ template<typename T>
 npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& data)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
 {
-    if(multiplies_vector(shape) == data.size())
+    if(multiplies_vector(shape.cbegin(), shape.cend()) == data.size())
     {
         npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -268,7 +265,7 @@ template<typename T>
 npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
 {
-    if(multiplies_vector(shape) == data.size())
+    if(multiplies_vector(shape.cbegin(), shape.cend()) == data.size())
     {
         npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -296,7 +293,7 @@ template<class T>
 npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializer_list<T> data_list)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
 {
-    if(multiplies_vector(shape_list) == data_list.size())
+    if(multiplies_vector(shape_list.begin(), shape_list.end()) == data_list.size())
     {
         npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
