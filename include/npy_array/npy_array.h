@@ -13,6 +13,7 @@
 #include <functional>
 #include <endian.h>
 #include <array>
+#include <initializer_list>
 
 #include "npy_array/endianess.h"
 #include "npy_array/npy_exception.h"
@@ -26,9 +27,12 @@ public:
 
     npy_array(const std::vector<size_t>& shape);
     npy_array(std::vector<size_t>&& shape);
+    npy_array(std::initializer_list<size_t> shape_list);
 
     npy_array(const std::vector<size_t>& shape, const std::vector<T>& data);
     npy_array(std::vector<size_t>&& shape, std::vector<T>&& data);
+    npy_array(std::initializer_list<size_t> shape_list, std::initializer_list<T> data_list);
+    
 
     npy_array() = delete;
     npy_array(const npy_array& other) = delete;

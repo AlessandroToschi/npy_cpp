@@ -10,6 +10,8 @@ enum npy_array_exception_type
     unsupported_version,
     invalid_magic_string,
     unsufficient_memory,
+    unsupported_dtype,
+    unmatched_shape_data,
     generic
 };
 

@@ -1,8 +1,13 @@
 #include "npy_array/npy_array.h"
 
-size_t multiplies_vector(std::vector<size_t>& vec)
+size_t multiplies_vector(const std::vector<size_t>& vec)
 {
-    return std::accumulate(vec.cbegin(), vec.cend(), 1, std::multiplies<size_t>());
+    return std::accumulate(vec.cbegin(), vec.cend(), size_t(1), std::multiplies<size_t>());
+}
+
+size_t multiplies_vector(const std::initializer_list<size_t>& vec)
+{
+    return std::accumulate(vec.begin(), vec.end(), size_t(1), std::multiplies<size_t>());
 }
 
 template<class T> 
@@ -178,7 +183,7 @@ npy_array<T>::npy_array(const std::string& array_path)
 }
 
 template<typename T>
-npy_array<T>::npy_array(const std::vector<size_t>& shape)
+npy_array<T>::npy_array(const std::vector<size_t>& shape) 
     : _shape{shape}, _data{}, _dtype{}, _fortran_order{false}
 {
     npy_dtype requested_dtype = npy_dtype::from_type<T>();
@@ -189,10 +194,10 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape)
     }
     else
     {
-        //THROW SOMETHING
+        throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
     
-    _data.resize(this->size());
+    _data.resize(multiplies_vector(_shape));
 }
 
 template<typename T>
@@ -207,17 +212,36 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape)
     }
     else
     {
-        //THROW SOMETHING
+        throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
     
-    _data.resize(this->size());
+    _data.resize(multiplies_vector(_shape));
 }
+
+template<class T> 
+npy_array<T>::npy_array(std::initializer_list<size_t> shape_list)
+    : _shape{shape_list}, _data{}, _dtype{}, _fortran_order{false}
+{
+    npy_dtype requested_dtype = npy_dtype::from_type<T>();
+
+    if(requested_dtype)
+    {
+        _dtype = std::move(requested_dtype);
+    }
+    else
+    {
+        throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
+    }
+    
+    _data.resize(multiplies_vector(_shape));
+}
+
 
 template<typename T>
 npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& data)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
 {
-    if(std::accumulate(shape.cbegin(), shape.cend(), 1, std::multiplies<size_t>()) == data.size())
+    if(multiplies_vector(shape) == data.size())
     {
         npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -227,16 +251,15 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& 
         }
         else
         {
-            /* code */
+            throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
         }
         
-
         _shape = shape;
         _data = data;
     }
     else
     {
-        /* code */
+        throw npy_array_exception{npy_array_exception_type::unmatched_shape_data};
     }
     
 } 
@@ -245,7 +268,7 @@ template<typename T>
 npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
     : _shape{}, _data{}, _dtype{}, _fortran_order{false}
 {
-    if(std::accumulate(shape.cbegin(), shape.cend(), 1, std::multiplies<size_t>()) == data.size())
+    if(multiplies_vector(shape) == data.size())
     {
         npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -255,7 +278,7 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
         }
         else
         {
-            /* code */
+            throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
         }
         
 
@@ -264,10 +287,38 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
     }
     else
     {
-        /* code */
+         throw npy_array_exception{npy_array_exception_type::unmatched_shape_data};
     }
     
 }
+
+template<class T> 
+npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializer_list<T> data_list)
+    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+{
+    if(multiplies_vector(shape_list) == data_list.size())
+    {
+        npy_dtype requested_dtype = npy_dtype::from_type<T>();
+
+        if(requested_dtype)
+        {
+            _dtype = std::move(requested_dtype);
+        }
+        else
+        {
+            throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
+        }
+        
+
+        _shape = shape_list;
+        _data = data_list;
+    }
+    else
+    {
+         throw npy_array_exception{npy_array_exception_type::unmatched_shape_data};
+    }
+}
+
 
 template<class T> const std::vector<size_t> &npy_array<T>::shape() const noexcept {return _shape;}
 template<class T> const npy_dtype &npy_array<T>::dtype() const noexcept {return _dtype;}

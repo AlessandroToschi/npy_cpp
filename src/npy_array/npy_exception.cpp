@@ -17,6 +17,10 @@ const char* npy_array_exception::what()
             return "The magic string is invalid.";
         case npy_array_exception_type::unsufficient_memory:
             return "The memory required is unsufficient.";
+        case npy_array_exception_type::unsupported_dtype:
+            return "The dtype required is not supported.";
+        case npy_array_exception_type::unmatched_shape_data:
+            return "The sizes of shape and data are mismatched.";
         case npy_array_exception_type::generic:
             return "There has been an error.";
         }
