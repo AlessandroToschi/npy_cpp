@@ -16,7 +16,7 @@ OBJECT_FILES := $(addprefix build/, $(SRC_FILES:%.cpp=%.o))
 TEST_OBJECT_FILES := $(SRC_TEST_FILES:%.cpp=%.o)
 
 CXX = g++
-CXXFLAGS= -g -c -fPIC -O0 --std=c++11 -Wall -Wpedantic
+CXXFLAGS= -g -c -fPIC -O3 -march=native --std=c++11 -Wall -Wpedantic
 
 INCLUDES = -I $(INCLUDE_PATH) -I $(SRC_INCLUDE_PATH) -I $(BOOST_INCLUDE_PATH)
 
@@ -36,7 +36,7 @@ build/%.o: %.cpp
 
 .PHONY: test
 test: shared_lib $(TEST_OBJECT_FILES)
-	@cp -r test_resources bin/
+	#@cp -r test_resources bin/
 
 %_test.o: %_test.cpp
 	@echo $(@F)

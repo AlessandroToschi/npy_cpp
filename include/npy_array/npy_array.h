@@ -32,28 +32,29 @@ public:
     npy_array(const std::vector<size_t>& shape, const std::vector<T>& data);
     npy_array(std::vector<size_t>&& shape, std::vector<T>&& data);
     npy_array(std::initializer_list<size_t> shape_list, std::initializer_list<T> data_list);
-    
 
     npy_array() = delete;
-    npy_array(const npy_array& other) = delete;
-    npy_array(npy_array&& other) = delete;
+    npy_array(const npy_array& other) = default;
+    npy_array(npy_array&& other) = default;
 
     ~npy_array() = default;
 
-    npy_array& operator=(npy_array other) = delete;
-    npy_array& operator=(const npy_array& other) = delete;
-    npy_array& operator=(npy_array&& other) = delete;
-
-    explicit opertor bool() const;
-    bool operator==(npy_array& other);
-    bool operator!=(npy_array& other);
+    npy_array& operator=(const npy_array& other) = default;
+    npy_array& operator=(npy_array&& other) = default;
+    T& operator[](size_t index);
+    const T& operator[](size_t index) const;
 
     const std::vector<size_t>& shape() const noexcept;
     const npy_dtype& dtype() const noexcept;
     bool fortran_order() const noexcept;
 
+    const T* data() const noexcept;
+    T* data() noexcept;
+
     size_t size() const noexcept;
     size_t byte_size() const noexcept;
+
+    void save(const std::string& array_path);
 private:
     std::vector<size_t> _shape;
     std::vector<T> _data;

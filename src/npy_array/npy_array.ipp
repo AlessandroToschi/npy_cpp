@@ -316,13 +316,78 @@ npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializ
     }
 }
 
+template<class T> 
+T& npy_array<T>::operator[](size_t index)
+{
+    if(index >= 0 && index < this->size()) return _data[index];
+    else
+    {
+        std::ostringstream string_stream{};
+        string_stream << "The index " << index << " is out of range (0, " << this->size() << ")";
+        throw std::out_of_range{string_stream.str()};
+    } 
+}
+
+template<class T> 
+const T& npy_array<T>::operator[](size_t index) const
+{
+    if(index >= 0 && index < this->size()) return _data[index];
+    else
+    {
+        std::ostringstream string_stream{};
+        string_stream << "The index " << index << " is out of range (0, " << this->size() << ")";
+        throw std::out_of_range{string_stream.str()};
+    }
+}
+
+
 
 template<class T> const std::vector<size_t> &npy_array<T>::shape() const noexcept {return _shape;}
 template<class T> const npy_dtype &npy_array<T>::dtype() const noexcept {return _dtype;}
 template<class T> bool npy_array<T>::fortran_order() const noexcept {return _fortran_order;}
 
+template<class T> const T *npy_array<T>::data() const noexcept {return _data.data();}
+template<class T> T *npy_array<T>::data() noexcept {return _data.data();}
+
 template<typename T> size_t npy_array<T>::size() const noexcept {return _data.size();}
 template<typename T> size_t npy_array<T>::byte_size() const noexcept {return _data.size() * sizeof(T);}
+
+template<class T> 
+void npy_array<T>::save(const std::string &array_path)
+{
+    std::stringstream header_string{};
+    header_string << "{'descr': '" << _dtype.str() << "', 'fortran_order': ";
+    header_string << (_fortran_order ? "True" : "False");
+    header_string << ", 'shape': (";
+
+    for(size_t i = 0; i != _shape.size() - 1; i++)
+    {
+        header_string << _shape[i] << ", ";
+    }
+
+    header_string << *(_shape.cend() - 1) << "), }\n";
+
+    size_t header_size = 6 + 2 + 2 + header_string.str().size();
+
+    if((header_size * 8) % 64 != 0)
+    {
+        auto quotient = (header_size * 8) / size_t(64);
+        auto remaining = ((quotient + 1) * size_t(64)) - (header_size * 8);
+        header_string << std::string(remaining, '\x20');
+        header_size += remaining;
+    }
+
+    header_size = header_string.str().size();
+
+    std::ofstream array_stream{array_path, std::ios_base::out | std::ios_base::binary};
+    array_stream << "\x93NUMPY";
+    array_stream << uint8_t(0x01) << uint8_t(0x00);
+    array_stream.write(reinterpret_cast<const char*>(&header_size), sizeof(uint16_t));
+    //array_stream << uint16_t(header_string.str().size());
+    array_stream << header_string.str();
+    array_stream.write(reinterpret_cast<const char*>(_data.data()), this->byte_size());
+    array_stream.flush();
+}
 
 
 

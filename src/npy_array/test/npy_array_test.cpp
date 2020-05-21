@@ -396,6 +396,141 @@ TEST(NPYArrayTest, ShapeDataListConstructor)
     }
 }
 
+TEST(NPYArrayTest, MoveTest)
+{
+    npy_array<float> p{"./test_resources/archive.npy"};
+    npy_array<float> c{std::move(p)};
+    std::vector<size_t> s{{1, 256, 13, 13}};
+
+    EXPECT_EQ(p.byte_size(), 0);
+    EXPECT_EQ(p.size(), 0);
+    EXPECT_EQ(p.fortran_order(), false);
+    EXPECT_EQ(p.shape(), std::vector<size_t>{});
+    EXPECT_EQ(p.dtype(), npy_dtype::null());
+
+    EXPECT_EQ(c.byte_size(), sizeof(float) * 256 * 13 * 13);
+    EXPECT_EQ(c.size(), 256 * 13 * 13);
+    EXPECT_EQ(c.fortran_order(), false);
+    EXPECT_EQ(c.shape(), s);
+    EXPECT_EQ(c.dtype(), npy_dtype::float_32());
+
+    auto d = std::move(c);
+
+    EXPECT_EQ(c.byte_size(), 0);
+    EXPECT_EQ(c.size(), 0);
+    EXPECT_EQ(c.fortran_order(), false);
+    EXPECT_EQ(c.shape(), std::vector<size_t>{});
+    EXPECT_EQ(c.dtype(), npy_dtype::null());
+
+    EXPECT_EQ(d.byte_size(), sizeof(float) * 256 * 13 * 13);
+    EXPECT_EQ(d.size(), 256 * 13 * 13);
+    EXPECT_EQ(d.fortran_order(), false);
+    EXPECT_EQ(d.shape(), s);
+    EXPECT_EQ(d.dtype(), npy_dtype::float_32());
+}
+
+TEST(NPYArrayTest, CopyTest)
+{
+    npy_array<float> p{"./test_resources/archive.npy"};
+    npy_array<float> c{p};
+    std::vector<size_t> s{{1, 256, 13, 13}};
+    
+    EXPECT_EQ(p.byte_size(), sizeof(float) * 256 * 13 * 13);
+    EXPECT_EQ(p.size(), 256 * 13 * 13);
+    EXPECT_EQ(p.fortran_order(), false);
+    EXPECT_EQ(p.shape(), s);
+    EXPECT_EQ(p.dtype(), npy_dtype::float_32());
+
+    EXPECT_EQ(c.byte_size(), sizeof(float) * 256 * 13 * 13);
+    EXPECT_EQ(c.size(), 256 * 13 * 13);
+    EXPECT_EQ(c.fortran_order(), false);
+    EXPECT_EQ(c.shape(), s);
+    EXPECT_EQ(c.dtype(), npy_dtype::float_32());
+
+    EXPECT_EQ(c.byte_size(), p.byte_size());
+    EXPECT_EQ(c.size(), p.size());
+    EXPECT_EQ(c.fortran_order(), p.fortran_order());
+    EXPECT_EQ(c.shape(), p.shape());
+    EXPECT_EQ(c.dtype(), p.dtype());
+
+    for(size_t i = 0; i < c.size(); i++)
+    {
+        EXPECT_FLOAT_EQ(c.data()[i], p.data()[i]);
+        EXPECT_NE(&c.data()[i], &p.data()[i]);
+    }
+
+    npy_array<float> ss = p;
+
+    EXPECT_EQ(p.byte_size(), sizeof(float) * 256 * 13 * 13);
+    EXPECT_EQ(p.size(), 256 * 13 * 13);
+    EXPECT_EQ(p.fortran_order(), false);
+    EXPECT_EQ(p.shape(), s);
+    EXPECT_EQ(p.dtype(), npy_dtype::float_32());
+
+    EXPECT_EQ(ss.byte_size(), sizeof(float) * 256 * 13 * 13);
+    EXPECT_EQ(ss.size(), 256 * 13 * 13);
+    EXPECT_EQ(ss.fortran_order(), false);
+    EXPECT_EQ(ss.shape(), s);
+    EXPECT_EQ(ss.dtype(), npy_dtype::float_32());
+
+    EXPECT_EQ(ss.byte_size(), p.byte_size());
+    EXPECT_EQ(ss.size(), p.size());
+    EXPECT_EQ(ss.fortran_order(), p.fortran_order());
+    EXPECT_EQ(ss.shape(), p.shape());
+    EXPECT_EQ(ss.dtype(), p.dtype());
+
+    for(size_t i = 0; i < s.size(); i++)
+    {
+        EXPECT_FLOAT_EQ(ss.data()[i], p.data()[i]);
+        EXPECT_NE(&ss.data()[i], &p.data()[i]);
+    }
+}
+
+TEST(NPYArrayTest, DataTest)
+{
+    npy_array<long> range{"./test_resources/10.npy"};
+
+    for(size_t i = 0; i != range.size(); i++)
+    {
+        EXPECT_EQ(range.data()[i], i);
+    }
+
+    for(size_t i = 0; i != range.size(); i++)
+    {
+        range.data()[i] = i + 10;
+        EXPECT_EQ(range.data()[i], i + 10);
+    }
+}
+
+TEST(NPYArrayTest, OperatorAtTest)
+{
+    npy_array<long> range{"./test_resources/10.npy"};
+
+    for(size_t i = 0; i != range.size(); i++)
+    {
+        EXPECT_EQ(range[i], i);
+    }
+
+    for(size_t i = 0; i != range.size(); i++)
+    {
+        range[i] = i + 10;
+        EXPECT_EQ(range[i], i + 10);
+    }
+}
+
+TEST(NPYArrayTest, SaveTest)
+{
+    npy_array<float> a{"./test_resources/archive.npy"};
+
+    for(size_t i = 0; i < a.size(); i++)
+    {
+        a[i] = 0.0f;
+    }
+
+    a.save("./test_resources/zero.npy");
+}
+
+
 int main(int argc, char* argv[])
 {
     testing::InitGoogleTest(&argc, argv);
