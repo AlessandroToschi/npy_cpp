@@ -528,6 +528,48 @@ TEST(NPYArrayTest, SaveTest)
     }
 
     a.save("./test_resources/zero.npy");
+
+    npy_array<uint8_t> b{{481, 321, 3}};
+    b.save("sddf");
+}
+
+TEST(NPYArrayTest, ListInitOperator)
+{
+    npy_array<float> a{{1, 256, 13, 13}};
+    std::fill(a.data(), a.data() + a.size(), 1.0f);
+
+    try
+    {
+        a[{0,1,1,1,1}];
+        FAIL();
+    }
+    catch(const std::out_of_range& e)
+    {
+        SUCCEED();
+    }
+
+    try
+    {
+        a[{0,1,1}];
+        FAIL();
+    }
+    catch(const std::out_of_range& e)
+    {
+        SUCCEED();
+    }
+    
+    try
+    {
+        a[{1,1,1,1}];
+        FAIL();
+    }
+    catch(const std::out_of_range& e)
+    {
+        SUCCEED();
+    }
+
+    float x = a[{0, 1, 1, 1}];
+    EXPECT_FLOAT_EQ(x, 1.0f);
 }
 
 

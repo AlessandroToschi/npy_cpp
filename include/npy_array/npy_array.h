@@ -43,13 +43,16 @@ public:
     npy_array& operator=(npy_array&& other) = default;
     T& operator[](size_t index);
     const T& operator[](size_t index) const;
+    T& operator[](std::initializer_list<size_t> indexes);
+    const T& operator[](std::initializer_list<size_t> indexes) const;
 
     const std::vector<size_t>& shape() const noexcept;
     const npy_dtype& dtype() const noexcept;
     bool fortran_order() const noexcept;
 
-    const T* data() const noexcept;
     T* data() noexcept;
+    const T* data() const noexcept;
+
 
     size_t size() const noexcept;
     size_t byte_size() const noexcept;
@@ -58,6 +61,7 @@ public:
 private:
     std::vector<size_t> _shape;
     std::vector<T> _data;
+    std::vector<size_t> _strides;
     npy_dtype _dtype;
     bool _fortran_order;
 

@@ -122,6 +122,13 @@ void npy_array<T>::parse_header(const std::string& header)
             {
                 throw boost::regex_error{boost::regex_constants::error_unknown};
             }
+
+            _strides.reserve(shape_values.size());
+            for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+            {
+                _strides.push_back(multiplies_vector(i, _shape.cend()));
+            }
+            _strides.push_back(1);
         }
         else if(key_value[0] == "") continue;
         else
@@ -135,7 +142,7 @@ void npy_array<T>::parse_header(const std::string& header)
 
 template<typename T>
 npy_array<T>::npy_array(const std::string& array_path)
-    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{}, _data{}, _strides{}, _dtype{}, _fortran_order{false}
 {
     std::ifstream array_file{};
     std::string header{};
@@ -181,7 +188,7 @@ npy_array<T>::npy_array(const std::string& array_path)
 
 template<typename T>
 npy_array<T>::npy_array(const std::vector<size_t>& shape) 
-    : _shape{shape}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{shape}, _data{}, _dtype{}, _strides{}, _fortran_order{false}
 {
     npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -195,11 +202,18 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape)
     }
     
     _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+
+    _strides.reserve(_shape.size());
+    for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+    {
+        _strides.push_back(multiplies_vector(i, _shape.cend()));
+    }
+    _strides.push_back(1);
 }
 
 template<typename T>
 npy_array<T>::npy_array(std::vector<size_t>&& shape)
-    : _shape{std::move(shape)}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{std::move(shape)}, _data{}, _strides{}, _dtype{}, _fortran_order{false}
 {
     npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -213,11 +227,18 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape)
     }
 
     _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+
+    _strides.reserve(_shape.size());
+    for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+    {
+        _strides.push_back(multiplies_vector(i, _shape.cend()));
+    }
+    _strides.push_back(1);
 }
 
 template<class T> 
 npy_array<T>::npy_array(std::initializer_list<size_t> shape_list)
-    : _shape{shape_list}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{shape_list}, _data{}, _strides{}, _dtype{}, _fortran_order{false}
 {
     npy_dtype requested_dtype = npy_dtype::from_type<T>();
 
@@ -231,12 +252,19 @@ npy_array<T>::npy_array(std::initializer_list<size_t> shape_list)
     }
     
     _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+
+    _strides.reserve(_shape.size());
+    for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+    {
+        _strides.push_back(multiplies_vector(i, _shape.cend()));
+    }
+    _strides.push_back(1);
 }
 
 
 template<typename T>
 npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& data)
-    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{}, _data{}, _strides{}, _dtype{}, _fortran_order{false}
 {
     if(multiplies_vector(shape.cbegin(), shape.cend()) == data.size())
     {
@@ -253,6 +281,13 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& 
         
         _shape = shape;
         _data = data;
+
+        _strides.reserve(_shape.size());
+        for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+        {
+            _strides.push_back(multiplies_vector(i, _shape.cend()));
+        }
+        _strides.push_back(1);
     }
     else
     {
@@ -263,7 +298,7 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& 
 
 template<typename T>
 npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
-    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{}, _data{}, _strides{}, _dtype{}, _fortran_order{false}
 {
     if(multiplies_vector(shape.cbegin(), shape.cend()) == data.size())
     {
@@ -281,6 +316,13 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
 
         _shape = std::move(shape);
         _data = std::move(data);
+
+        _strides.reserve(_shape.size());
+        for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+        {
+            _strides.push_back(multiplies_vector(i, _shape.cend()));
+        }
+        _strides.push_back(1);
     }
     else
     {
@@ -291,7 +333,7 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
 
 template<class T> 
 npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializer_list<T> data_list)
-    : _shape{}, _data{}, _dtype{}, _fortran_order{false}
+    : _shape{}, _data{}, _strides{}, _dtype{}, _fortran_order{false}
 {
     if(multiplies_vector(shape_list.begin(), shape_list.end()) == data_list.size())
     {
@@ -309,12 +351,43 @@ npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializ
 
         _shape = shape_list;
         _data = data_list;
+
+        _strides.reserve(_shape.size());
+        for(std::vector<size_t>::const_iterator i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
+        {
+            _strides.push_back(multiplies_vector(i, _shape.cend()));
+        }
+        _strides.push_back(1);
     }
     else
     {
          throw npy_array_exception{npy_array_exception_type::unmatched_shape_data};
     }
 }
+
+template<class T> 
+const T& npy_array<T>::operator[](std::initializer_list<size_t> indexes) const
+{
+    if(indexes.size() != _shape.size()) throw std::out_of_range{"The indexes provided are different from the shape dimensions."};
+
+    if(indexes.size() == 1)
+    {
+        if(*indexes.begin() >= this->size()) throw std::out_of_range{"out of range"};
+        return _data[*indexes.begin()];
+    }
+    else
+    {
+        for(size_t i = 0; i < _shape.size(); i++)
+        {
+            if(*(indexes.begin() + i) >= _shape[i]) throw std::out_of_range{"The index is out of range"};
+        }
+
+        size_t index = std::inner_product(indexes.begin(), indexes.end(), _strides.cbegin(), size_t(0));
+
+        return _data[index];
+    }
+}
+
 
 template<class T> 
 T& npy_array<T>::operator[](size_t index)
@@ -341,6 +414,31 @@ const T& npy_array<T>::operator[](size_t index) const
 }
 
 
+template<class T> 
+T& npy_array<T>::operator[](std::initializer_list<size_t> indexes)
+{
+    if(indexes.size() != _shape.size()) throw std::out_of_range{"The indexes provided are different from the shape dimensions."};
+
+    if(indexes.size() == 1)
+    {
+        if(*indexes.begin() >= this->size()) throw std::out_of_range{"out of range"};
+        return _data[*indexes.begin()];
+    }
+    else
+    {
+        for(size_t i = 0; i < _shape.size(); i++)
+        {
+            if(*(indexes.begin() + i) >= _shape[i]) throw std::out_of_range{"The index is out of range"};
+        }
+
+        size_t index = std::inner_product(indexes.begin(), indexes.end(), _strides.cbegin(), size_t(0));
+
+        return _data[index];
+    }
+}
+
+
+
 
 template<class T> const std::vector<size_t> &npy_array<T>::shape() const noexcept {return _shape;}
 template<class T> const npy_dtype &npy_array<T>::dtype() const noexcept {return _dtype;}
@@ -365,16 +463,16 @@ void npy_array<T>::save(const std::string &array_path)
         header_string << _shape[i] << ", ";
     }
 
-    header_string << *(_shape.cend() - 1) << "), }\n";
+    header_string << *(_shape.cend() - 1) << "), }";
 
-    size_t header_size = 6 + 2 + 2 + header_string.str().size();
+    size_t header_size = 6 + 2 + 2 + header_string.str().size() + 1;
+    size_t padding = 64 - (header_size % 64);
 
-    if((header_size * 8) % 64 != 0)
+    if(padding > 0)
     {
-        auto quotient = (header_size * 8) / size_t(64);
-        auto remaining = ((quotient + 1) * size_t(64)) - (header_size * 8);
-        header_string << std::string(remaining, '\x20');
-        header_size += remaining;
+        header_string << std::string(padding, '\x20');
+        header_string << '\n';
+        header_size += padding;
     }
 
     header_size = header_string.str().size();
