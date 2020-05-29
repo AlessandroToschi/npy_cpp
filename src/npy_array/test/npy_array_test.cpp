@@ -540,7 +540,7 @@ TEST(NPYArrayTest, ListInitOperator)
 
     try
     {
-        a[{0,1,1,1,1}];
+        a.at({0,1,1,1,1});
         FAIL();
     }
     catch(const std::out_of_range& e)
@@ -550,7 +550,7 @@ TEST(NPYArrayTest, ListInitOperator)
 
     try
     {
-        a[{0,1,1}];
+        a.at({0,1,1});
         FAIL();
     }
     catch(const std::out_of_range& e)
@@ -560,7 +560,7 @@ TEST(NPYArrayTest, ListInitOperator)
     
     try
     {
-        a[{1,1,1,1}];
+        a.at({1,1,1,1});
         FAIL();
     }
     catch(const std::out_of_range& e)
@@ -568,7 +568,7 @@ TEST(NPYArrayTest, ListInitOperator)
         SUCCEED();
     }
 
-    float x = a[{0, 1, 1, 1}];
+    float x = a.at({0, 1, 1, 1});
     EXPECT_FLOAT_EQ(x, 1.0f);
 }
 
