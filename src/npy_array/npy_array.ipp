@@ -144,7 +144,7 @@ void npy_array<T>::check_for_strides()
 {
     if(_strides.size() == 0)
     {
-        _strides.resize(_shape.size());
+        _strides.reserve(_shape.size());
 
         for(auto i = std::next(_shape.cbegin()); i != _shape.cend(); i = std::next(i))
         {
@@ -182,7 +182,10 @@ npy_array<T>::npy_array(const std::string& array_path)
         this->parse_header(this->read_header(array_file));
 
         _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+
         array_file.read(reinterpret_cast<char*>(_data.data()), _data.size() * sizeof(T));
+
+        this->check_for_strides();
     }
     catch(const std::ios_base::failure& failure_exception)
     {
@@ -212,42 +215,36 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape)
     }
     
     _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+
+    this->check_for_strides();
 }
 
 template<typename T>
 npy_array<T>::npy_array(std::vector<size_t>&& shape)
     : _shape{std::move(shape)}, _data{}, _strides{}, _dtype{std::move(npy_dtype::from_type<T>())}, _fortran_order{false}
 {
-    npy_dtype requested_dtype = npy_dtype::from_type<T>();
-
-    if(requested_dtype)
-    {
-        _dtype = std::move(requested_dtype);
-    }
-    else
+    if(!_dtype)
     {
         throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
-
+    
     _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+
+    this->check_for_strides();
 }
 
 template<class T> 
 npy_array<T>::npy_array(std::initializer_list<size_t> shape_list)
     : _shape{shape_list}, _data{}, _strides{}, _dtype{std::move(npy_dtype::from_type<T>())}, _fortran_order{false}
 {
-    npy_dtype requested_dtype = npy_dtype::from_type<T>();
-
-    if(requested_dtype)
-    {
-        _dtype = std::move(requested_dtype);
-    }
-    else
+    if(!_dtype)
     {
         throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
     }
     
-    _data.resize(multiplies_vector(_shape.cbegin(), _shape.cend()));
+    _data.resize(multiplies_vector(shape_list.begin(), shape_list.end()));
+
+    this->check_for_strides();
 }
 
 
@@ -257,19 +254,15 @@ npy_array<T>::npy_array(const std::vector<size_t>& shape, const std::vector<T>& 
 {
     if(multiplies_vector(shape.cbegin(), shape.cend()) == data.size())
     {
-        npy_dtype requested_dtype = npy_dtype::from_type<T>();
-
-        if(requested_dtype)
-        {
-            _dtype = std::move(requested_dtype);
-        }
-        else
+        if(!_dtype)
         {
             throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
         }
         
         _shape = shape;
         _data = data;
+
+        this->check_for_strides();
     }
     else
     {
@@ -284,20 +277,15 @@ npy_array<T>::npy_array(std::vector<size_t>&& shape, std::vector<T>&& data)
 {
     if(multiplies_vector(shape.cbegin(), shape.cend()) == data.size())
     {
-        npy_dtype requested_dtype = npy_dtype::from_type<T>();
-
-        if(requested_dtype)
-        {
-            _dtype = std::move(requested_dtype);
-        }
-        else
+        if(!_dtype)
         {
             throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
         }
         
+        _shape = shape;
+        _data = data;
 
-        _shape = std::move(shape);
-        _data = std::move(data);
+        this->check_for_strides();
     }
     else
     {
@@ -312,13 +300,7 @@ npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializ
 {
     if(multiplies_vector(shape_list.begin(), shape_list.end()) == data_list.size())
     {
-        npy_dtype requested_dtype = npy_dtype::from_type<T>();
-
-        if(requested_dtype)
-        {
-            _dtype = std::move(requested_dtype);
-        }
-        else
+        if(!_dtype)
         {
             throw npy_array_exception{npy_array_exception_type::unsupported_dtype};
         }
@@ -326,6 +308,8 @@ npy_array<T>::npy_array(std::initializer_list<size_t> shape_list, std::initializ
 
         _shape = shape_list;
         _data = data_list;
+
+        this->check_for_strides();
     }
     else
     {
@@ -348,8 +332,6 @@ const T& npy_array<T>::operator[](size_t index) const noexcept
 template<class T> 
 T& npy_array<T>::operator[](std::initializer_list<size_t> indexes) noexcept
 {
-    this->check_for_strides();
-
     size_t index = std::inner_product(indexes.begin(), indexes.end(), _strides.begin(), size_t(0));
 
     return _data[index];
@@ -358,8 +340,6 @@ T& npy_array<T>::operator[](std::initializer_list<size_t> indexes) noexcept
 template<class T> 
 const T& npy_array<T>::operator[](std::initializer_list<size_t> indexes) const noexcept
 {
-    this->check_for_strides();
-
     size_t index = std::inner_product(indexes.begin(), indexes.end(), _strides.begin(), size_t(0));
 
     return _data[index];
